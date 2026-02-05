@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             \Illuminate\Support\Facades\Cache::flush();
             \Illuminate\Support\Facades\Log::info("Sistem: Cache telah dibersihkan otomatis.");
-        })->everyFifteenMinutes();
+        })->everyFifteenSeconds();
     }
 
     protected function commands(): void

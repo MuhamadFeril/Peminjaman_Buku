@@ -34,9 +34,7 @@ Route::middleware('auth:api')->name('api.')->group(function () {
     Route::middleware('admin')->name('api.')->group(function () {
         Route::apiResource('anggota', AnggotaController::class);
     });
-
-    // 2. Fitur Buku & Peminjaman
-    // Gunakan apiResource TANPA tambahan route manual di luar grup ini
+Route::get('buku/search', [BukuController::class, 'search']);
     Route::apiResource('buku', BukuController::class);
     Route::apiResource('peminjaman', PeminjamanController::class);
 

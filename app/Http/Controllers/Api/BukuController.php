@@ -7,6 +7,8 @@ use App\Http\Requests\StoreBukuRequest;
 use Illuminate\Http\Request;
 use App\Handler\BukuHandler;
 use Illuminate\Http\JsonResponse;
+use App\Http\Resources\BukuResource;
+
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -22,6 +24,7 @@ class BukuController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        
         try {
             if ($request->filled('judul')) {
                 $judul = $request->judul;
@@ -99,22 +102,21 @@ class BukuController extends Controller
         // Simpan Data ke Database
         $buku = $this->bukuhandler->create($data);
 
-        // 3. MESSAGE QUEUE: Kirim ke antrean latar belakang
-        // Menjalankan sleep(5) di background tanpa mengganggu user
+        // 3. MESSAGE QUEUE
         \App\Jobs\SendNotificationJob::dispatch("Buku baru ditambahkan: " . $buku->judul);
 
-        // 4. CACHING: Hapus cache lama agar data terbaru muncul di GET
+        // 4. CACHING
         Cache::forget('list_buku');
 
+        // PERBAIKAN: Gunakan 'new BukuResource($buku)' agar waktu diubah ke WIB
         return response()->json([
             'status' => 'success',
             'message' => 'Buku berhasil ditambahkan dan notifikasi diproses di background',
-            'data' => $buku,
+            'data' => new BukuResource($buku), // Ini akan memanggil format timezone di Resource
             'path' => isset($data['cover_buku']) ? asset('storage/' . $data['cover_buku']) : null
         ], 201);
 
     } catch (Exception $e) {
-        // 5. MONITORING: Mencatat error ke log sistem
         Log::error('Error Store Buku: ' . $e->getMessage());
         return response()->json([
             'status' => 'error',
@@ -123,43 +125,44 @@ class BukuController extends Controller
     }
 }
     public function update(Request $request, $id): JsonResponse
-    {
-        // Only admin may update books
-        if (! auth()->check() || strtolower(trim(auth()->user()->role ?? '')) !== 'admin') {
-            Log::info('Buku::update - unauthorized attempt', ['user_id' => optional(auth()->user())->id, 'role' => optional(auth()->user())->role]);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized. Hanya admin yang diperbolehkan.'
-            ], 403);
-        }
-
-        try {
-            $data = $request->all();
-            $buku = $this->bukuhandler->update($id, $data);
-
-            if (! $buku) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Buku tidak ditemukan'
-                ], 404);
-            }
-
-            $this->clearBukuCache($id);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Buku berhasil diperbarui',
-                'data' => $buku
-            ], 200);
-        } catch (Exception $e) {
-            Log::error('Error Update Buku: ' . $e->getMessage());
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Gagal memperbarui data buku.'
-            ], 500);
-        }
+{
+    // Cek Admin
+    if (! auth()->check() || strtolower(trim(auth()->user()->role ?? '')) !== 'admin') {
+        Log::info('Buku::update - unauthorized attempt', ['user_id' => optional(auth()->user())->id, 'role' => optional(auth()->user())->role]);
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Unauthorized. Hanya admin yang diperbolehkan.'
+        ], 403);
     }
 
+    try {
+        $data = $request->all();
+        $buku = $this->bukuhandler->update($id, $data);
+
+        if (! $buku) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Buku tidak ditemukan'
+            ], 404);
+        }
+
+        $this->clearBukuCache($id);
+
+        // PERBAIKAN: Gunakan 'new BukuResource($buku)' agar waktu diubah ke WIB
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Buku berhasil diperbarui',
+            'data' => new BukuResource($buku) // Memastikan respon mengikuti format waktu Indonesia
+        ], 200);
+
+    } catch (Exception $e) {
+        Log::error('Error Update Buku: ' . $e->getMessage());
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Gagal memperbarui data buku.'
+        ], 500);
+    }
+}
     public function destroy($id): JsonResponse
     {
         if (! auth()->check() || strtolower(trim(auth()->user()->role ?? '')) !== 'admin') {
@@ -202,4 +205,31 @@ class BukuController extends Controller
             Cache::forget("buku_show_{$id}");
         }
     }
+   public function search(Request $request): JsonResponse
+{
+    // 1. Ambil keyword 'search'
+    $keyword = $request->query('search');
+
+    // 2. Jika keyword kosong, jangan beri semua data, beri pesan error saja
+    if (empty($keyword)) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Masukkan kata kunci pencarian.'
+        ], 400);
+    }
+
+    $cacheKey = "search_buku_" . md5($keyword);
+
+    // 3. Jalankan pencarian
+    $data = Cache::remember($cacheKey, 600, function () use ($keyword) {
+        return \App\Models\Buku::where('judul', 'like', "%{$keyword}%")
+                   ->orWhere('penulis', 'like', "%{$keyword}%")
+                   ->get();
+    });
+
+    return response()->json([
+        'status' => 'success',
+        'data'   => BukuResource::collection($data)
+    ], 200);
+}
 }
