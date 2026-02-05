@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Helpers\SearchHelper;
+use App\Http\Resources\PeminjamanResource;
 
 class PeminjamanController extends Controller
 {
@@ -39,9 +41,14 @@ class PeminjamanController extends Controller
                 $data = $this->peminjamanHandler->getPeminjamanByAnggotaId($request->anggota_id);
             }
 
+            // Wrap with resource so dates are formatted to WIB
+            $payload = is_iterable($data)
+                ? PeminjamanResource::collection($data)
+                : new PeminjamanResource($data);
+
             return response()->json([
                 'status' => 'success',
-                'data'   => $data
+                'data'   => $payload
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -50,13 +57,42 @@ class PeminjamanController extends Controller
             ], 500);
         }
     }
+
+    public function search(Request $request): JsonResponse
+    {
+        $keyword = $request->query('search');
+
+        if (empty($keyword)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Keyword pencarian tidak boleh kosong.'
+            ], 400);
+        }
+
+        try {
+            $results = SearchHelper::searchPeminjaman($keyword);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Hasil pencarian peminjaman untuk: ' . $keyword,
+                'data' => $results
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal melakukan pencarian: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    // history feature removed
     public function show($id): JsonResponse
     {
         try {
             $peminjaman = Peminjaman::findOrFail($id);
             return response()->json([
                 'status' => 'success',
-                'data'   => $peminjaman
+                'data'   => new PeminjamanResource($peminjaman)
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -98,6 +134,7 @@ class PeminjamanController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Buku tidak tersedia.'], 400);
             }
 
+
             $peminjaman = $this->peminjamanHandler->create($data);
 
             // Optionally decrement buku persediaan
@@ -106,7 +143,7 @@ class PeminjamanController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Peminjaman berhasil dibuat',
-                'data'    => $peminjaman
+                'data'    => new PeminjamanResource($peminjaman)
             ], 201);
         } 
         catch (Exception $e) {
@@ -136,7 +173,7 @@ class PeminjamanController extends Controller
             }
 
             $updated = $this->peminjamanHandler->updatePeminjaman($id, $data);
-            return response()->json(['status' => 'success', 'message' => 'Peminjaman berhasil diperbarui', 'data' => $updated], 200);
+            return response()->json(['status' => 'success', 'message' => 'Peminjaman berhasil diperbarui', 'data' => new PeminjamanResource($updated)], 200);
         } catch (Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -169,4 +206,5 @@ class PeminjamanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Terjadi kesalahan sistem saat menghapus data.'], 500);
         }
     }
+    
 }

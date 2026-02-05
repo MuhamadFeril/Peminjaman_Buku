@@ -32,12 +32,18 @@ Route::middleware('auth:api')->name('api.')->group(function () {
 
     // 1. Fitur Khusus Admin
     Route::middleware('admin')->name('api.')->group(function () {
+        // Route pencarian khusus harus dideklarasikan sebelum route resource
+        Route::get('anggota/search', [AnggotaController::class, 'search']);
         Route::apiResource('anggota', AnggotaController::class);
     });
 Route::get('buku/search', [BukuController::class, 'search']);
     Route::apiResource('buku', BukuController::class);
-    Route::apiResource('peminjaman', PeminjamanController::class);
+    // Route pencarian peminjaman harus dideklarasikan sebelum resource
+    Route::get('peminjaman/search', [PeminjamanController::class, 'search']);
+    // PERBAIKAN: Taruh ini di ATAS resource
+Route::get('peminjaman/history', [App\Http\Controllers\Api\PeminjamanController::class, 'history']);
 
+// Riwayat Spesifik Anggota
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 

@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use App\Handler\BukuHandler;
 use Illuminate\Http\JsonResponse;
 use App\Http\Resources\BukuResource;
-
+use App\Helpers\SearchHelper;
+use App\Models\Buku;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -21,34 +22,53 @@ class BukuController extends Controller
     {
         $this->bukuhandler = $bukuhandler;
     }
+   public function index(Request $request): JsonResponse
+{
+    try {
+        // Menggunakan method get() untuk mengambil seluruh data tanpa pagination
+        $data = \App\Models\Buku::orderBy('id_buku', 'desc')->get();
 
-    public function index(Request $request): JsonResponse
-    {
-        
-        try {
-            if ($request->filled('judul')) {
-                $judul = $request->judul;
-                $data = Cache::remember("buku_search_{$judul}", 600, function () use ($judul) {
-                    return $this->bukuhandler->findByJudul($judul);
-                });
-            } else {
-                $data = Cache::remember('list_buku', 3600, function () {
-                    return $this->bukuhandler->all();
-                });
-            }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Menampilkan semua data tanpa pagination',
+            'data' => BukuResource::collection($data) // Gunakan Resource agar waktu terformat
+        ], 200);
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $data
-            ], 200);
-        } catch (Exception $e) {
-            Log::error("Error Index Buku: " . $e->getMessage());
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Gagal mengambil data buku.'
-            ], 500);
-        }
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Gagal mengambil data: ' . $e->getMessage()
+        ], 500);
     }
+}
+   public function indexpaginate(Request $request): JsonResponse
+{
+    try {
+        // Ambil parameter dari URL
+        $keyword = $request->query('search'); // Opsional
+        $perPage = $request->query('per_page', 2); // Default 10 data
+
+        // Memanggil SearchHelper (mendukung pagination jika per_page diberikan)
+        $buku = SearchHelper::searchBuku($keyword, (int) $perPage);
+
+        // Jika helper mengembalikan paginator array (untuk paginated responses), gabungkan langsung
+        if (is_array($buku) && array_key_exists('data', $buku)) {
+            return response()->json(array_merge(['status' => 'success'], $buku), 200);
+        }
+
+        // Jika helper mengembalikan Resource collection/object, gunakan toArray
+        return response()->json(array_merge(
+            ['status' => 'success'],
+            is_object($buku) ? $buku->toArray($request) : (array) $buku
+        ), 200);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Gagal mengambil data buku: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
     public function show($id): JsonResponse
     {
@@ -205,31 +225,48 @@ class BukuController extends Controller
             Cache::forget("buku_show_{$id}");
         }
     }
-   public function search(Request $request): JsonResponse
+    public function search(Request $request): JsonResponse
 {
-    // 1. Ambil keyword 'search'
     $keyword = $request->query('search');
 
-    // 2. Jika keyword kosong, jangan beri semua data, beri pesan error saja
-    if (empty($keyword)) {
+    try {
+        // Memanggil fungsi tanpa paginate
+        $results = \App\Helpers\SearchHelper::searchBukuTanpaPaginate($keyword);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Hasil pencarian untuk: ' . ($keyword ?? 'Semua Data'),
+            'data' => $results // Ini akan langsung berupa array objek
+        ], 200);
+
+    } catch (Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Masukkan kata kunci pencarian.'
-        ], 400);
+            'message' => 'Gagal melakukan pencarian: ' . $e->getMessage()
+        ], 500);
     }
+}
+    public function searchpaginate(Request $request): JsonResponse
+{
+    $keyword = $request->query('search'); 
+    // Pastikan mengambil input per_page, jika tidak ada baru gunakan default 2
+    $perPage = $request->query('per_page', 2); 
 
-    $cacheKey = "search_buku_" . md5($keyword);
+    try {
+        // Kirimkan variabel $perPage ke helper
+        $results = \App\Helpers\SearchHelper::searchBuku($keyword, (int) $perPage);
 
-    // 3. Jalankan pencarian
-    $data = Cache::remember($cacheKey, 600, function () use ($keyword) {
-        return \App\Models\Buku::where('judul', 'like', "%{$keyword}%")
-                   ->orWhere('penulis', 'like', "%{$keyword}%")
-                   ->get();
-    });
+        if (is_array($results) && array_key_exists('data', $results)) {
+            return response()->json(array_merge(['status' => 'success'], $results), 200);
+        }
 
-    return response()->json([
-        'status' => 'success',
-        'data'   => BukuResource::collection($data)
-    ], 200);
+        return response()->json(array_merge(['status' => 'success'], is_object($results) ? $results->toArray() : (array) $results), 200);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Gagal: ' . $e->getMessage()
+        ], 500);
+    }
 }
 }

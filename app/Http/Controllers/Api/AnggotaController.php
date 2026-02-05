@@ -7,6 +7,7 @@ use App\Http\Requests\StoreAnggotaRequest;
 use App\Handler\AnggotaHandler;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use App\Helpers\SearchHelper;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -19,24 +20,33 @@ class AnggotaController extends Controller
         $this->handler = $handler;
     }
 
-    public function index(Request $request): JsonResponse
-    {
-        try {
-            $data = $request->filled('nama')
-                ? $this->handler->getAnggotaByName($request->nama)
-                : $this->handler->getAllAnggota();
+   public function index(Request $request): JsonResponse
+{
+    try {
+        // Ambil parameter dari URL
+        $keyword = $request->query('search'); // Opsional
+        $perPage = $request->query('per_page', 10); // Default 10 data
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $data
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Gagal mengambil data anggota'
-            ], 500);
+        // Memanggil SearchHelper (mendukung pagination jika per_page diberikan)
+        $anggota = SearchHelper::searchAnggota($keyword, (int) $perPage);
+
+        // Jika SearchHelper mengembalikan array paginator, gabungkan keys ke response
+        if (is_array($anggota) && array_key_exists('data', $anggota)) {
+            return response()->json(array_merge(['status' => 'success'], $anggota), 200);
         }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $anggota
+        ], 200);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Gagal mengambil data anggota: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function store(StoreAnggotaRequest $request): JsonResponse
     {
@@ -50,7 +60,7 @@ class AnggotaController extends Controller
                 'data'    => $anggota
             ], 201);
         } catch (Exception $e) {
-            return response(ModelNotFoundException::class)->json([
+            return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage()
             ], 400);
@@ -63,7 +73,7 @@ class AnggotaController extends Controller
             $anggota = $this->handler->getAnggotaById($id);
 
             if (! $anggota) {
-   throw new Exception(' anggota tidak ditemukana ');
+                throw new Exception('Anggota tidak ditemukan');
             }
 
             return response()->json([
@@ -139,4 +149,35 @@ class AnggotaController extends Controller
             ], 500);
         }
     }
-}
+    public function search(Request $request): JsonResponse
+    {
+        // Mengambil parameter ?search=... dari URL
+        $keyword = $request->query('search');
+
+        if (empty($keyword)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Keyword pencarian tidak boleh kosong.'
+            ], 400);
+        }  
+        $keyword = $request->query('search'); // Mengambil input ?search=...
+    $perPage = $request->query('per_page', 2); // Mengambil input ?per_page=...
+
+        try {
+            // Memanggil logika pencarian di SearchHelper
+            $results = SearchHelper::searchAnggota($keyword);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Hasil pencarian anggota untuk: ' . $keyword,
+                'data' => $results
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal melakukan pencarian: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    }

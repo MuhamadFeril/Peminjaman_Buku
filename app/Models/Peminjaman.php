@@ -15,6 +15,7 @@ class Peminjaman extends Model
         "buku_id",
         "tanggal_pinjam",
         "tanggal_kembali",
+        "status",
     ];
     public function Anggota()
     {

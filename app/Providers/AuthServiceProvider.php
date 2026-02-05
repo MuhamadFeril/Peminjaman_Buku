@@ -25,6 +25,12 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
+        // Note: Passport routes are now loaded via the package's route file
+        // (Passport v12+). Calling Passport::routes() is deprecated/removed
+        // and causes a fatal error. Routes will be available after
+        // running `php artisan passport:install` which also creates the
+        // necessary clients and keys.
+
         // Ensure a Passport personal access client exists to avoid runtime exceptions
         try {
             if (class_exists(Passport::class)) {

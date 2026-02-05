@@ -50,5 +50,6 @@ class BukuResource extends JsonResource
     : '-', 
                 ];
 
-    }     
-    }
+    }    
+
+}  
