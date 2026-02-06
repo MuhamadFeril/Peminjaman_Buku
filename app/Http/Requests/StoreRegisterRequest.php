@@ -14,7 +14,7 @@ class StoreRegisterRequest extends FormRequest
             return [
                 'email' => 'required|email|max:255',
                 'password' => 'required|string|min:8',
-                'password_confirmation'=>'required|string|min:8',
+                'password_confirmation'=>'required|string|min:8|confirmed',
                 'role' => 'nullable|in:admin,user,peminjam',
             ];
     }
@@ -30,6 +30,7 @@ class StoreRegisterRequest extends FormRequest
             'password_confirmation.required' => 'Konfirmasi password wajib diisi.',
             'password_confirmation.string' => 'Konfirmasi password harus berupa teks.',
             'password_confirmation.min' => 'Konfirmasi password minimal 8 karakter.',
+            'password_confirmation.confirmed' => 'Password dan konfirmasi password tidak cocok.',
         ];
     }
 }

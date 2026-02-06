@@ -34,9 +34,8 @@ class SearchHelper
 
             $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage)->appends(['search' => $keyword, 'per_page' => $perPage]);
 
-            $paginatorArray = $paginator->toArray();
-            $transformed = BukuResource::collection($paginator->getCollection())->resolve();
-            $paginatorArray['data'] = $transformed;
+            $transformed = BukuResource::collection($paginator->items())->resolve();
+            $paginatorArray = collect($paginator)->all() + ['data' => $transformed];
 
             if (empty($paginatorArray['total'])) {
                 $paginatorArray['from'] = 0;
@@ -71,9 +70,8 @@ class SearchHelper
 
             $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage)->appends(['search' => $keyword, 'per_page' => $perPage]);
 
-            $paginatorArray = $paginator->toArray();
-            $transformed = AnggotaResource::collection($paginator->getCollection())->resolve();
-            $paginatorArray['data'] = $transformed;
+            $transformed = AnggotaResource::collection($paginator->items())->resolve();
+            $paginatorArray = collect($paginator)->all() + ['data' => $transformed];
 
             if (empty($paginatorArray['total'])) {
                 $paginatorArray['from'] = 0;

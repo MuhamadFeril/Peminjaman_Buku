@@ -41,8 +41,10 @@ Route::get('buku/search2', [BukuController::class, 'searchpaginate']);
     Route::apiResource('buku', BukuController::class);
     // Route pencarian peminjaman harus dideklarasikan sebelum resource
     Route::get('peminjaman/search', [PeminjamanController::class, 'search']);
-    // PERBAIKAN: Taruh ini di ATAS resource
-Route::get('peminjaman/history', [App\Http\Controllers\Api\PeminjamanController::class, 'history']);
+    // Riwayat peminjaman (user-specific)
+    Route::get('peminjaman/history', [App\Http\Controllers\Api\PeminjamanController::class, 'history']);
+    // Resource API untuk peminjaman (index, show, store, update, destroy)
+    Route::apiResource('peminjaman', PeminjamanController::class);
 
 // Riwayat Spesifik Anggota
     Route::post('/logout', [AuthController::class, 'logout']);

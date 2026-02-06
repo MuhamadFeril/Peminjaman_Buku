@@ -46,7 +46,7 @@ class BukuController extends Controller
     try {
         // Ambil parameter dari URL
         $keyword = $request->query('search'); // Opsional
-        $perPage = $request->query('per_page', 2); // Default 10 data
+        $perPage = $request->query('per_page', 10); // Default 10 data
 
         // Memanggil SearchHelper (mendukung pagination jika per_page diberikan)
         $buku = SearchHelper::searchBuku($keyword, (int) $perPage);
@@ -250,7 +250,7 @@ class BukuController extends Controller
 {
     $keyword = $request->query('search'); 
     // Pastikan mengambil input per_page, jika tidak ada baru gunakan default 2
-    $perPage = $request->query('per_page', 2); 
+    $perPage = $request->query('per_page', 10); 
 
     try {
         // Kirimkan variabel $perPage ke helper
@@ -260,7 +260,7 @@ class BukuController extends Controller
             return response()->json(array_merge(['status' => 'success'], $results), 200);
         }
 
-        return response()->json(array_merge(['status' => 'success'], is_object($results) ? $results->toArray() : (array) $results), 200);
+        return response()->json(array_merge(['status' => 'success'], is_object($results) ? $results->toArray($request) : (array) $results), 200);
 
     } catch (Exception $e) {
         return response()->json([

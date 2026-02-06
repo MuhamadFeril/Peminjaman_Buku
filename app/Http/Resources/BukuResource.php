@@ -17,8 +17,6 @@ class BukuResource extends JsonResource
 
         // Pastikan mengambil kolom 'pengarang' dari DB jika 'penulis' null
         $penulis = $this->penulis ?? $this->pengarang ?? '-';
-
-        // Logika persediaan
         $persediaanVal = $this->persediaan ?? null;
         $available = false;
         if (is_numeric($persediaanVal)) {
@@ -28,7 +26,7 @@ class BukuResource extends JsonResource
             $available = in_array($str, ['ya', 'yes', 'true']);
         }
 
-        return [
+     return [
             'id'           => $id,
             'judul'        => $this->judul ?? '-',
             'penulis'      => $penulis,
@@ -43,7 +41,7 @@ class BukuResource extends JsonResource
         ->format('d-m-Y H:i:s') . ' WIB' 
     : '-',
 
-'updated_at' => $this->updated_at 
+    'updated_at' => $this->updated_at 
     ? \Carbon\Carbon::parse($this->updated_at)
         ->timezone('Asia/Jakarta') // Memastikan waktu update juga WIB
         ->format('d-m-Y H:i:s') . ' WIB' 
