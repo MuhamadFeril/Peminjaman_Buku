@@ -26,7 +26,7 @@ class BukuController extends Controller
 {
     try {
         // Menggunakan method get() untuk mengambil seluruh data tanpa pagination
-        $data = \App\Models\Buku::orderBy('id_buku', 'desc')->get();
+        $data = Buku::orderBy('id_buku', 'desc')->get();
 
         return response()->json([
             'status' => 'success',
@@ -46,7 +46,7 @@ class BukuController extends Controller
     try {
         // Ambil parameter dari URL
         $keyword = $request->query('search'); // Opsional
-        $perPage = $request->query('per_page', 10); // Default 10 data
+        $perPage = $request->query('per_page', default: 10); // Default 10 data
 
         // Memanggil SearchHelper (mendukung pagination jika per_page diberikan)
         $buku = SearchHelper::searchBuku($keyword, (int) $perPage);
@@ -231,7 +231,7 @@ class BukuController extends Controller
 
     try {
         // Memanggil fungsi tanpa paginate
-        $results = \App\Helpers\SearchHelper::searchBukuTanpaPaginate($keyword);
+        $results = SearchHelper::searchBukuTanpaPaginate($keyword);
 
         return response()->json([
             'status' => 'success',
@@ -254,7 +254,7 @@ class BukuController extends Controller
 
     try {
         // Kirimkan variabel $perPage ke helper
-        $results = \App\Helpers\SearchHelper::searchBuku($keyword, (int) $perPage);
+        $results = SearchHelper::searchBuku($keyword, (int) $perPage);
 
         if (is_array($results) && array_key_exists('data', $results)) {
             return response()->json(array_merge(['status' => 'success'], $results), 200);

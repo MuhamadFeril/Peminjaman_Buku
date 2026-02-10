@@ -7,41 +7,39 @@
         <a href="{{ route('anggota.create') }}" class="btn btn-primary">Tambah Anggota</a>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
+    <div class="table-responsive shadow-sm bg-white rounded">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:80px">#</th>
+                    <th>Nama</th>
+                    <th>Alamat</th>
+                    <th>Telepon</th>
+                    <th style="width:200px">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($anggotas as $i => $anggota)
+                    <tr>
+                        <td>{{ ($anggotas->currentPage()-1) * $anggotas->perPage() + $i + 1 }}</td>
+                        <td>{{ $anggota->nama }}</td>
+                        <td>{{ $anggota->alamat }}</td>
+                        <td>{{ $anggota->nomor }}</td>
+                        <td>
+                            <a href="{{ route('anggota.edit', $anggota->uuid ?? $anggota->id_anggota) }}" class="btn btn-sm btn-secondary me-1">Edit</a>
+                            <form action="{{ route('anggota.destroy', $anggota->uuid ?? $anggota->id_anggota) }}" method="POST" style="display:inline">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus anggota?')">Hapus</button>
+                            </form>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Nama</th>
-                <th>Alamat</th>
-                <th>Telepon</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($anggotas as $anggota)
-            <tr>
-                <td>{{ $anggota->id_anggota }}</td>
-                <td>{{ $anggota->nama }}</td>
-                <td>{{ $anggota->alamat }}</td>
-                <td>{{ $anggota->nomor }}</td>
-                <td>
-                    <a href="{{ route('anggota.edit', $anggota->id_anggota) }}" class="btn btn-sm btn-secondary">Edit</a>
-                    <form action="{{ route('anggota.destroy', $anggota->id_anggota) }}" method="POST" style="display:inline">
-                        @csrf
-                        @method('DELETE')
-                        <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus anggota?')">Hapus</button>
-                    </form>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    {{ $anggotas->links() }}
+    <div class="mt-3">{{ $anggotas->links() }}</div>
 </div>
 <style>
     @keyframes fadeIn {

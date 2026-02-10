@@ -27,6 +27,7 @@ class BukuResource extends JsonResource
         }
 
      return [
+             'uuid'         => $this->uuid ?? null,
             'id'           => $id,
             'judul'        => $this->judul ?? '-',
             'penulis'      => $penulis,
@@ -36,13 +37,13 @@ class BukuResource extends JsonResource
             
          
            'created_at' => $this->created_at 
-    ? \Carbon\Carbon::parse($this->created_at)
+    ? Carbon::parse($this->created_at)
         ->timezone('Asia/Jakarta') // Menambah 7 jam secara otomatis ke WIB
         ->format('d-m-Y H:i:s') . ' WIB' 
     : '-',
 
     'updated_at' => $this->updated_at 
-    ? \Carbon\Carbon::parse($this->updated_at)
+    ? Carbon::parse($this->updated_at)
         ->timezone('Asia/Jakarta') // Memastikan waktu update juga WIB
         ->format('d-m-Y H:i:s') . ' WIB' 
     : '-', 

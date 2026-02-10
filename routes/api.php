@@ -36,7 +36,7 @@ Route::middleware('auth:api')->name('api.')->group(function () {
         Route::get('anggota/search', [AnggotaController::class, 'search']);
         Route::apiResource('anggota', AnggotaController::class);
     });
-    Route::get('buku/search', [BukuController::class, 'search']);
+    Route::get('buku/search', action: [BukuController::class, 'search']);
 Route::get('buku/search2', [BukuController::class, 'searchpaginate']);
     Route::apiResource('buku', BukuController::class);
     // Route pencarian peminjaman harus dideklarasikan sebelum resource

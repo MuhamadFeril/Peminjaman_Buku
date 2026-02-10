@@ -20,9 +20,9 @@
             <p><strong>Persediaan:</strong> <span class="badge bg-info">{{ $buku->persediaan }}</span></p>
             
             <div class="mt-4">
-                @if(auth()->user()->role === 'admin')
-                    <a href="{{ route('buku.edit', $buku->id_buku) }}" class="btn btn-secondary">Edit</a>
-                    <form action="{{ route('buku.destroy', $buku->id_buku) }}" method="POST" style="display:inline">
+                    @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-secondary">Edit</a>
+                    <form action="{{ route('buku.destroy', $buku->uuid ?? $buku->id_buku) }}" method="POST" style="display:inline">
                         @csrf
                         @method('DELETE')
                         <button class="btn btn-danger" onclick="return confirm('Hapus buku?')">Hapus</button>

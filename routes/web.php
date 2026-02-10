@@ -5,7 +5,8 @@ use App\Http\Controllers\BukuController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\DashboardController;
- use App\Http\Controllers\ProfileController;
+ use App\Http\Controllers\ProfileController;// Authentication
+use App\Http\Controllers\AuthController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -18,25 +19,33 @@ use App\Http\Controllers\DashboardController;
 */
 
 Route::get('/', function () {
-    return redirect()->route('dashboard.index');
+    if (auth()->check()) {
+        return redirect()->route('dashboard.index');
+    }
+    return redirect()->route('login');
 });
 
-// Authentication
-use App\Http\Controllers\AuthController;
 
+
+// Authentication routes (always reachable)
 Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('login', [AuthController::class, 'login']);
 Route::get('register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('register', [AuthController::class, 'register']);
+
+// Logout (POST) should be available to authenticated users
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-// Resource routes for CRUD (protected)
+// Public viewing routes (GET) - available to all devices/users
+Route::get('buku', [BukuController::class, 'index'])->name('buku.index');
+Route::get('peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
+Route::get('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
+
+// Protected routes: creation/modification require auth + permissions
 Route::middleware('auth')->group(function () {
-    // Buku routes - GET untuk semua, CRUD hanya admin
-    Route::get('buku', [BukuController::class, 'index'])->middleware('web_permission:buku.view')->name('buku.index');
+    // Buku management (admin)
     Route::get('buku/create', [BukuController::class, 'create'])->middleware('web_permission:buku.manage')->name('buku.create');
     Route::post('buku', [BukuController::class, 'store'])->middleware('web_permission:buku.manage')->name('buku.store');
-    Route::get('buku/{id_buku}', [BukuController::class, 'show'])->middleware('web_permission:buku.view')->name('buku.show');
     Route::get('buku/{id_buku}/edit', [BukuController::class, 'edit'])->middleware('web_permission:buku.manage')->name('buku.edit');
     Route::put('buku/{id_buku}', [BukuController::class, 'update'])->middleware('web_permission:buku.manage')->name('buku.update');
     Route::delete('buku/{id_buku}', [BukuController::class, 'destroy'])->middleware('web_permission:buku.manage')->name('buku.destroy');
@@ -46,11 +55,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('anggota', AnggotaController::class);
     });
 
-    // Peminjaman routes - GET untuk semua, POST/PUT/DELETE untuk semua (dengan validasi di controller)
-    Route::get('peminjaman', [PeminjamanController::class, 'index'])->middleware('web_permission:peminjaman.view')->name('peminjaman.index');
+    // Peminjaman management
     Route::get('peminjaman/create', [PeminjamanController::class, 'create'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.create');
     Route::post('peminjaman', [PeminjamanController::class, 'store'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.store');
-    Route::get('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'show'])->middleware('web_permission:peminjaman.view')->name('peminjaman.show');
     Route::get('peminjaman/{id_peminjaman}/edit', [PeminjamanController::class, 'edit'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.edit');
     Route::put('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'update'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.update');
     Route::delete('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'destroy'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.destroy');
@@ -62,12 +69,15 @@ Route::middleware('auth')->group(function () {
         request()->session()->regenerateToken();
         return redirect('/');
     })->name('logout.get');
+
     // Dashboard - single route
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
     // Profile routes
-   
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
 });
+
+// Public single-book route moved below to avoid catching 'create' and other specific paths
+Route::get('buku/{id_buku}', [BukuController::class, 'show'])->name('buku.show');

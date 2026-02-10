@@ -2,23 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 // Ganti baris di bawah ini dari Sanctum ke Passport
 use Laravel\Passport\HasApiTokens; 
 
+
 class User extends Authenticatable
 {
     // Pastikan HasApiTokens di sini sekarang merujuk ke Passport
     use HasApiTokens, HasFactory, Notifiable;
-    // Use default primary key for users table
+
+    // keep default integer primary key `id`
     protected $primaryKey = 'id';
 
-    // Route Model Binding key (default is 'id')
+    // Use uuid for route model binding
     public function getRouteKeyName()
     {
-        return 'id';
+        return 'uuid';
     }
    protected $fillable = [
     'name',
@@ -26,6 +29,7 @@ class User extends Authenticatable
     'password',
     'role', // Tambahkan ini agar bisa register sebagai admin via API
     'profile_photo',
+    'uuid',
     
 ];
 
@@ -38,4 +42,13 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
 }

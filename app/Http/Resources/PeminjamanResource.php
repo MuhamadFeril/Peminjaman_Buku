@@ -10,6 +10,7 @@ class PeminjamanResource extends JsonResource
   public function toArray($request): array
     {
         return [
+            'uuid' => $this->uuid ?? null,
             'id_peminjaman' => $this->id_peminjaman,
             'status'        => $this->status,
 

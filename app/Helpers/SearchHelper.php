@@ -14,7 +14,7 @@ class SearchHelper
 {
     public static function searchBukuTanpaPaginate($keyword = null)
 {
-    $query = \App\Models\Buku::query();
+    $query = Buku::query();
 
     if ($keyword) {
         $query->where('judul', 'like', "%{$keyword}%")

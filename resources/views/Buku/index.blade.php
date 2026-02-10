@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <div class="d-flex justify-content-between mb-4">
+        <div class="d-flex justify-content-between mb-4">
         <h3>Daftar Buku</h3>
         <a href="{{ route('buku.create') }}" class="btn btn-primary">Tambah Buku</a>
     </div>
@@ -11,39 +11,39 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-        @foreach($bukus as $buku)
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                @if(!empty($buku->cover_buku))
-                    <img src="{{ asset('storage/' . $buku->cover_buku) }}" class="card-img-top" alt="{{ $buku->judul }}" style="height:260px; object-fit:cover;">
-                @else
-                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:260px;">
-                        <span class="text-muted">No Image</span>
-                    </div>
-                @endif
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">{{ $buku->judul }}</h5>
-                    <p class="card-text mb-1"><strong>Penulis:</strong> {{ $buku->penulis ?? '-' }}</p>
-                    <p class="card-text mb-2"><strong>Tahun:</strong> {{ $buku->tahun_terbit ?? '-' }}</p>
-                    <p class="card-text mt-auto"><small class="text-muted">Stok: {{ $buku->persediaan }}</small></p>
-                </div>
-                <div class="card-footer bg-white">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ route('buku.show', $buku->id_buku) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
-                        <div>
-                            <a href="{{ route('buku.edit', $buku->id_buku) }}" class="btn btn-sm btn-secondary">Edit</a>
-                            <form action="{{ route('buku.destroy', $buku->id_buku) }}" method="POST" style="display:inline">
+    <div class="table-responsive shadow-sm bg-white rounded">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:80px">#</th>
+                    <th>Judul</th>
+                    <th>Penulis</th>
+                    <th>Tahun</th>
+                    <th>Persediaan</th>
+                    <th style="width:220px">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($bukus as $index => $buku)
+                    <tr>
+                        <td>{{ ($bukus->currentPage()-1) * $bukus->perPage() + $index + 1 }}</td>
+                        <td>{{ $buku->judul }}</td>
+                        <td>{{ $buku->penulis ?? '-' }}</td>
+                        <td>{{ $buku->tahun_terbit ?? '-' }}</td>
+                        <td>{{ $buku->persediaan }}</td>
+                        <td>
+                            <a href="{{ route('buku.show', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-outline-primary me-1">Lihat</a>
+                            <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-secondary me-1">Edit</a>
+                            <form action="{{ route('buku.destroy', $buku->uuid ?? $buku->id_buku) }}" method="POST" style="display:inline">
                                 @csrf
                                 @method('DELETE')
                                 <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus buku?')">Hapus</button>
                             </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endforeach
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
 
     <div class="mt-4">

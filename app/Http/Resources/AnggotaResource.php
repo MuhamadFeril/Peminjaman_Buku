@@ -10,6 +10,7 @@ class AnggotaResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'uuid'        => $this->uuid ?? null,
             "id_anggota" => $this->id_anggota,
             "nama"       => $this->nama,
             "alamat"     => $this->alamat,

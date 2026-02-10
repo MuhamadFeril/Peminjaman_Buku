@@ -15,15 +15,14 @@ class PeminjamanController extends Controller
      */
         public function index()
         {
-            $user = auth()->user();
-            // Admin melihat semua, user biasa hanya melihat miliknya sendiri
-            if ($user->role === 'admin') {
-                $peminjamans = Peminjaman::with(['Anggota','Buku'])->latest()->paginate(15);
-            } else {
-                // User biasa: filter berdasarkan anggota yang terkait dengan user
-                // Asumsi: user memiliki anggota yang terkait (sesuaikan logika sesuai database Anda)
-                $peminjamans = Peminjaman::with(['Anggota','Buku'])->latest()->paginate(15);
-            }
+                $user = auth()->user();
+                // Admin melihat semua, user biasa atau tamu juga melihat daftar (sesuaikan jika ingin filter)
+                if ($user && isset($user->role) && $user->role === 'admin') {
+                    $peminjamans = Peminjaman::with(['Anggota','Buku'])->latest()->paginate(15);
+                } else {
+                    // Untuk user biasa atau tamu, tampilkan daftar peminjaman umum
+                    $peminjamans = Peminjaman::with(['Anggota','Buku'])->latest()->paginate(15);
+                }
             return view('peminjaman.index', compact('peminjamans'));
         }
 

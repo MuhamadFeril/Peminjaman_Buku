@@ -63,7 +63,7 @@ class BukuController extends Controller
      */
     public function show(string $id_buku)
     {
-        $buku = Buku::findOrFail($id_buku);
+        $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
         return view('buku.show', compact('buku'));
     }
 
@@ -75,7 +75,7 @@ class BukuController extends Controller
         if (auth()->user()->role !== 'admin') {
             return redirect('/buku')->with('error', 'Anda tidak bisa mengedit buku.');
         }
-        $buku = Buku::findOrFail($id_buku);
+        $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
         return view('buku.edit', compact('buku'));
     }
 
@@ -84,7 +84,7 @@ class BukuController extends Controller
      */
      public function update(Request $request, string $id_buku)
      {
-         $buku = Buku::findOrFail($id_buku);
+         $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
 
          $data = $request->validate([
               'judul' => 'required|string|max:255',
@@ -123,7 +123,10 @@ class BukuController extends Controller
      */
     public function destroy(string $id_buku)
     {
-     Buku::find($id_buku)->delete();
+     $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->first();
+     if ($buku) {
+         $buku->delete();
+     }
      return redirect()->route("buku.index")->with("success","buku.deleted");
     }
 }

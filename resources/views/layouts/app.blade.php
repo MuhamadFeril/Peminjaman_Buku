@@ -103,6 +103,8 @@
     </nav>
 
     <main class="container">
+        @include('partials.alerts')
+        @include('partials.toast')
         @yield('content')
     </main>
 

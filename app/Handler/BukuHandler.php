@@ -2,6 +2,7 @@
 namespace App\Handler;
 
 use App\Models\Buku;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Collection;
 use Exception;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +26,11 @@ class BukuHandler
 
     public function find($id): ?Buku
     {
+        // Support UUID or numeric id lookup
+        if (is_string($id) && preg_match('/^[0-9a-fA-F\-]{36}$/', $id)) {
+            return $this->model->where('uuid', $id)->first();
+        }
+
         return $this->model->find($id);
     }
 
@@ -48,6 +54,7 @@ class BukuHandler
 
     public function update($id, array $data): ?Buku
     {
+        // allow $id to be uuid or numeric
         $existing = $this->find($id);
         if (! $existing) {
             return null;
