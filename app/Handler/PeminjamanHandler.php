@@ -4,6 +4,8 @@ namespace App\Handler;
 use App\Repositories\PeminjamanRepository;
 use Illuminate\Support\Facades\Cache;
 use App\Jobs\SendNotificationJob;
+use Illuminate\Support\Facades\DB;
+use App\Models\Buku;
 
 class PeminjamanHandler
 {
@@ -16,11 +18,27 @@ class PeminjamanHandler
 
     public function create($data)
     {
-        $result = $this->repo->create($data);
+        $result = DB::transaction(function () use ($data) {
+            // lock the book row for update to avoid race conditions
+            $buku = Buku::lockForUpdate()->find($data['buku_id']);
+            if (! $buku) {
+                throw new \Exception("Buku tidak ditemukan");
+            }
 
-        if (empty($result)) {
-            throw new \Exception("Data peminjaman kosong");
-        }
+            if ($buku->persediaan <= 0) {
+                throw new \Exception("Buku tidak tersedia");
+            }
+
+            $created = $this->repo->create($data);
+            if (empty($created)) {
+                throw new \Exception("Data peminjaman kosong");
+            }
+
+            // decrement stock
+            $buku->decrement('persediaan');
+
+            return $created;
+        });
 
         // Clear cache after creating new loan
         Cache::forget('list_peminjaman');

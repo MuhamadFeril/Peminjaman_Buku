@@ -13,6 +13,7 @@ use App\Helpers\SearchHelper;
 use App\Http\Resources\PeminjamanResource;
 use App\Models\Buku;
 use App\Helpers\ResponseHelper;
+use Illuminate\Support\Facades\Log;
 
 
 class PeminjamanController extends Controller
@@ -147,13 +148,17 @@ class PeminjamanController extends Controller
 
             $peminjaman = $this->peminjamanHandler->create($data);
 
-            // Optionally decrement buku persediaan
-            $buku->decrement('persediaan');
-
             return ResponseHelper::success(new PeminjamanResource($peminjaman), 'Peminjaman berhasil dibuat', 201);
-        } 
+        }
         catch (Exception $e) {
-            return ResponseHelper::error(null, $e->getMessage(), 400);
+            Log::error('Peminjaman::store exception', [
+                'exception_class' => get_class($e),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payload' => $data
+            ]);
+
+            return ResponseHelper::error(null, $e->getMessage() ?: 'Terjadi kesalahan saat membuat peminjaman. Periksa log untuk detail.', 400);
         }
     }
 
