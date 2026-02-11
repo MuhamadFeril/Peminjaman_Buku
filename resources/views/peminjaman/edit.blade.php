@@ -11,7 +11,7 @@
             <label class="form-label">Anggota</label>
             <select name="anggota_id" class="form-control">
                 @foreach($anggotas as $anggota)
-                    <option value="{{ $anggota->id_anggota }}" @if($peminjaman->anggota_id == $anggota->id_anggota) selected @endif>{{ $anggota->nama }}</option>
+                    <option value="{{ $anggota->uuid ?? $anggota->id_anggota }}" @if($peminjaman->anggota_id == ($anggota->uuid ?? $anggota->id_anggota)) selected @endif>{{ $anggota->nama }}</option>
                 @endforeach
             </select>
         </div>
@@ -20,7 +20,7 @@
             <label class="form-label">Buku</label>
             <select name="buku_id" class="form-control">
                 @foreach($bukus as $buku)
-                    <option value="{{ $buku->id_buku }}" @if($peminjaman->buku_id == $buku->id_buku) selected @endif>{{ $buku->judul }}</option>
+                    <option value="{{ $buku->uuid ?? $buku->id_buku }}" @if($peminjaman->buku_id == ($buku->uuid ?? $buku->id_buku)) selected @endif>{{ $buku->judul }}</option>
                 @endforeach
             </select>
         </div>

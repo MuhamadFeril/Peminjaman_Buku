@@ -30,7 +30,7 @@
             <select name="buku_id" class="form-control @error('buku_id') is-invalid @enderror" required>
                 <option value="">-- Pilih Buku --</option>
                 @foreach($bukus as $buku)
-                    <option value="{{ $buku->id_buku }}" {{ old('buku_id') == $buku->id_buku ? 'selected' : '' }}>{{ $buku->judul }}</option>
+                    <option value="{{ $buku->uuid ?? $buku->id_buku }}" {{ old('buku_id') == ($buku->uuid ?? $buku->id_buku) ? 'selected' : '' }}>{{ $buku->judul }}</option>
                 @endforeach
             </select>
             @error('buku_id') <span class="text-danger small">{{ $message }}</span> @enderror

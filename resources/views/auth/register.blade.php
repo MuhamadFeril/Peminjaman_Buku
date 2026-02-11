@@ -6,7 +6,7 @@
         <div class="col-md-6">
             <h3>Register</h3>
 
-            <form method="POST" action="{{ url('register') }}">
+            <form method="POST" action="{{ route('register') }}">
                 @csrf
 
                 <div class="mb-3">
@@ -17,6 +17,15 @@
                 <div class="mb-3">
                     <label class="form-label">Email</label>
                     <input type="email" name="email" class="form-control" value="{{ old('email') }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-control">
+                        <option value="user" {{ old('role', 'user') == 'user' ? 'selected' : '' }}>User</option>
+                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                    </select>
+                    <small class="text-muted">Pilih peran pengguna (default: User)</small>
                 </div>
 
                 <div class="mb-3">

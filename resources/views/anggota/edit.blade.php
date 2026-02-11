@@ -4,7 +4,7 @@
 <div class="container">
     <h3>Edit Anggota</h3>
 
-    <form action="{{ route('anggota.update', $anggota->id) }}" method="POST">
+    <form action="{{ route('anggota.update', $anggota->uuid ?? $anggota->id_anggota) }}" method="POST">
         @csrf
         @method('PUT')
         <div class="mb-3">

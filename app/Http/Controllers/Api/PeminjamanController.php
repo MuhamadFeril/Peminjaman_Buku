@@ -11,6 +11,9 @@ use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Helpers\SearchHelper;
 use App\Http\Resources\PeminjamanResource;
+use App\Models\Buku;
+use App\Helpers\ResponseHelper;
+
 
 class PeminjamanController extends Controller
 {
@@ -24,37 +27,57 @@ class PeminjamanController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            // Admin can view all or filter by query param
+            $perPage = $request->query('per_page', null);
+
+            if ($perPage) {
+                $perPage = (int) $perPage;
+
+                if (auth()->check() && strtolower(trim(auth()->user()->role ?? '')) === 'admin') {
+                    $query = $request->filled('anggota_id')
+                        ? \App\Models\Peminjaman::where('anggota_id', $request->anggota_id)
+                        : \App\Models\Peminjaman::query();
+                } else {
+                    if (! $request->filled('anggota_id')) {
+                        return ResponseHelper::error(null, 'Untuk user umum, sertakan parameter anggota_id untuk melihat riwayat Anda.', 403);
+                    }
+                    $query = \App\Models\Peminjaman::where('anggota_id', $request->anggota_id);
+                }
+
+                $paginator = $query->orderBy('created_at', 'desc')
+                                   ->paginate($perPage)
+                                   ->appends(['per_page' => $perPage, 'anggota_id' => $request->query('anggota_id')]);
+
+                $transformed = PeminjamanResource::collection($paginator->items())->resolve();
+                $paginatorArray = collect($paginator)->all() + ['data' => $transformed];
+
+                if (empty($paginatorArray['total'])) {
+                    $paginatorArray['from'] = 0;
+                    $paginatorArray['to'] = 0;
+                }
+
+                return ResponseHelper::success($paginatorArray);
+            }
+
+            // No pagination: existing behavior
             if (auth()->check() && strtolower(trim(auth()->user()->role ?? '')) === 'admin') {
                 $data = $request->filled('anggota_id')
                     ? $this->peminjamanHandler->getPeminjamanByAnggotaId($request->anggota_id)
                     : $this->peminjamanHandler->getAllPeminjaman();
             } else {
-                // Non-admin must provide anggota_id to view their own records
                 if (! $request->filled('anggota_id')) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Untuk user umum, sertakan parameter anggota_id untuk melihat riwayat Anda.'
-                    ], 403);
+                    return ResponseHelper::error(null, 'Untuk user umum, sertakan parameter anggota_id untuk melihat riwayat Anda.', 403);
                 }
 
                 $data = $this->peminjamanHandler->getPeminjamanByAnggotaId($request->anggota_id);
             }
 
-            // Wrap with resource so dates are formatted to WIB
             $payload = is_iterable($data)
                 ? PeminjamanResource::collection($data)
                 : new PeminjamanResource($data);
 
-            return response()->json([
-                'status' => 'success',
-                'data'   => $payload
-            ], 200);
+            return ResponseHelper::success($payload);
         } catch (Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Gagal mengambil data peminjaman'
-            ], 500);
+            return ResponseHelper::error(null, 'Gagal mengambil data peminjaman', 500);
         }
     }
 
@@ -63,25 +86,21 @@ class PeminjamanController extends Controller
         $keyword = $request->query('search');
 
         if (empty($keyword)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Keyword pencarian tidak boleh kosong.'
-            ], 400);
+            return ResponseHelper::error(null, 'Keyword pencarian tidak boleh kosong.', 400);
         }
 
-        try {
-            $results = SearchHelper::searchPeminjaman($keyword);
+        $perPage = $request->query('per_page', null);
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Hasil pencarian peminjaman untuk: ' . $keyword,
-                'data' => $results
-            ], 200);
+        try {
+            $results = SearchHelper::searchPeminjaman($keyword, $perPage ? (int) $perPage : null);
+
+            if (is_array($results) && array_key_exists('data', $results)) {
+                return ResponseHelper::success($results, 'Hasil pencarian peminjaman untuk: ' . $keyword);
+            }
+
+            return ResponseHelper::success(is_object($results) ? $results->toArray($request) : (array) $results, 'Hasil pencarian peminjaman untuk: ' . $keyword);
         } catch (Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal melakukan pencarian: ' . $e->getMessage()
-            ], 500);
+            return ResponseHelper::error(null, 'Gagal melakukan pencarian: ' . $e->getMessage(), 500);
         }
     }
     
@@ -90,20 +109,11 @@ class PeminjamanController extends Controller
     {
         try {
             $peminjaman = Peminjaman::findOrFail($id);
-            return response()->json([
-                'status' => 'success',
-                'data'   => new PeminjamanResource($peminjaman)
-            ], 200);
+            return ResponseHelper::success(new PeminjamanResource($peminjaman));
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Peminjaman tidak ditemukan'
-            ], 404);
+            return ResponseHelper::error(null, 'Peminjaman tidak ditemukan', 404);
         } catch (Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Gagal mengambil data peminjaman'
-            ], 500);
+            return ResponseHelper::error(null, 'Gagal mengambil data peminjaman', 500);
         }
     }
 
@@ -115,23 +125,23 @@ class PeminjamanController extends Controller
 
             // Set default tanggal_pinjam if not provided
             if (empty($data['tanggal_pinjam'])) {
-                return response()->json(['status' => 'error', 'message' => 'tanggal_pinjam wajib diisi.'], 400);
+                return ResponseHelper::error(null, 'tanggal_pinjam wajib diisi.', 400);
             }
 
             if (empty($data['anggota_id']) || empty($data['buku_id'])) {
-                return response()->json(['status' => 'error', 'message' => 'anggota_id dan buku_id wajib diisi.'], 400);
+                return ResponseHelper::error(null, 'anggota_id dan buku_id wajib diisi.', 400);
             }
 
             // Additional simple checks: anggota and buku exist
             if (! \App\Models\Anggota::find($data['anggota_id'])) {
-                return response()->json(['status' => 'error', 'message' => 'Anggota tidak ditemukan.'], 404);
+                return ResponseHelper::error(null, 'Anggota tidak ditemukan.', 404);
             }
-            $buku = \App\Models\Buku::find($data['buku_id']);
+            $buku = Buku::find($data['buku_id']);
             if (! $buku) {
-                return response()->json(['status' => 'error', 'message' => 'Buku tidak ditemukan.'], 404);
+                return ResponseHelper::error(null, 'Buku tidak ditemukan.', 404);
             }
             if ($buku->persediaan <= 0) {
-                return response()->json(['status' => 'error', 'message' => 'Buku tidak tersedia.'], 400);
+                return ResponseHelper::error(null, 'Buku tidak tersedia.', 400);
             }
 
 
@@ -140,17 +150,10 @@ class PeminjamanController extends Controller
             // Optionally decrement buku persediaan
             $buku->decrement('persediaan');
 
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Peminjaman berhasil dibuat',
-                'data'    => new PeminjamanResource($peminjaman)
-            ], 201);
+            return ResponseHelper::success(new PeminjamanResource($peminjaman), 'Peminjaman berhasil dibuat', 201);
         } 
         catch (Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage()
-            ], 400);
+            return ResponseHelper::error(null, $e->getMessage(), 400);
         }
     }
 
@@ -162,23 +165,19 @@ class PeminjamanController extends Controller
         try {
             $peminjaman = $this->peminjamanHandler->getPeminjamanById($id);
             if (! $peminjaman) {
-                return response()->json(['status' => 'error', 'message' => 'Peminjaman tidak ditemukan'], 404);
+                return ResponseHelper::error(null, 'Peminjaman tidak ditemukan', 404);
             }
 
             // Authorization: admin can update any. Non-admin may update only if they supply matching anggota_id.
             if (! (auth()->check() && strtolower(trim(auth()->user()->role ?? '')) === 'admin')) {
                 if (empty($data['anggota_id']) || $data['anggota_id'] != $peminjaman->anggota_id) {
-                    return response()->json(['status' => 'error', 'message' => 'Unauthorized. Hanya owner atau admin yang bisa mengubah.'], 403);
+                    return ResponseHelper::error(null, 'Unauthorized. Hanya owner atau admin yang bisa mengubah.', 403);
                 }
             }
-
             $updated = $this->peminjamanHandler->updatePeminjaman($id, $data);
-            return response()->json(['status' => 'success', 'message' => 'Peminjaman berhasil diperbarui', 'data' => new PeminjamanResource($updated)], 200);
+            return ResponseHelper::success(new PeminjamanResource($updated), 'Peminjaman berhasil diperbarui');
         } catch (Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Terjadi kesalahan saat memperbarui data peminjaman.'
-            ], 500);
+            return ResponseHelper::error(null, 'Terjadi kesalahan saat memperbarui data peminjaman.', 500);
         }
     }
 
@@ -188,22 +187,21 @@ class PeminjamanController extends Controller
             $peminjaman = $this->peminjamanHandler->getPeminjamanById($id);
 
             if (!$peminjaman) {
-                return response()->json(['status' => 'error', 'message' => 'Peminjaman tidak ditemukan.'], 404);
+                return ResponseHelper::error(null, 'Peminjaman tidak ditemukan.', 404);
             }
 
             // Authorization: admin can delete any; non-admin can delete only if they provide matching anggota_id
             if (! (auth()->check() && strtolower(trim(auth()->user()->role ?? '')) === 'admin')) {
                 $anggota_id = request()->get('anggota_id');
                 if (empty($anggota_id) || $anggota_id != $peminjaman->anggota_id) {
-                    return response()->json(['status' => 'error', 'message' => 'Unauthorized. Hanya owner atau admin yang bisa menghapus.'], 403);
+                    return ResponseHelper::error(null, 'Unauthorized. Hanya owner atau admin yang bisa menghapus.', 403);
                 }
             }
-
             $this->peminjamanHandler->deletePeminjaman($id);
 
-            return response()->json(['status' => 'success', 'message' => 'Peminjaman berhasil dihapus'], 200);
+            return ResponseHelper::success(null, 'Peminjaman berhasil dihapus');
         } catch (Exception $e) {
-            return response()->json(['status' => 'error', 'message' => 'Terjadi kesalahan sistem saat menghapus data.'], 500);
+            return ResponseHelper::error(null, 'Terjadi kesalahan sistem saat menghapus data.', 500);
         }
     }
     

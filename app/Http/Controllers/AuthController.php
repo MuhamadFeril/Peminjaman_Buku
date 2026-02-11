@@ -40,17 +40,19 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
+            'role' => 'required|in:user,admin',
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role' => $data['role'] ?? 'user',
         ]);
 
-        Auth::login($user);
-
-        return redirect()->route('dashboard.index');
+        // Do not auto-login after registration. Redirect to login page so user can
+        // explicitly authenticate (prevents confusion where to go after registering).
+        return redirect()->route('login')->with('success', 'Registrasi berhasil. Silakan login.');
     }
 
     public function logout(Request $request)

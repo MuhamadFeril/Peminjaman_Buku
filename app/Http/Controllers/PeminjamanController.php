@@ -53,16 +53,17 @@ class PeminjamanController extends Controller
        }
 
        $data = $request->validate([
-           'buku_id' => 'required|exists:table_buku,id_buku',
+           'buku_id' => 'required',
            'tanggal_pinjam' => 'required|date',
            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
        ]);
-       
+
        $data['anggota_id'] = $anggota->id_anggota;
 
         // Ensure book has stock and decrement atomically
         return DB::transaction(function () use ($data) {
-            $buku = Buku::lockForUpdate()->find($data['buku_id']);
+            // accept uuid or numeric id
+            $buku = Buku::where('uuid', $data['buku_id'])->orWhere('id_buku', $data['buku_id'])->lockForUpdate()->first();
             if (! $buku) {
                 return redirect()->back()->withErrors(['buku_id' => 'Buku tidak ditemukan'])->withInput();
             }
@@ -74,7 +75,12 @@ class PeminjamanController extends Controller
             $buku->persediaan = max(0, $buku->persediaan - 1);
             $buku->save();
 
-            Peminjaman::create($data);
+            Peminjaman::create([
+                'anggota_id' => $data['anggota_id'],
+                'buku_id' => $buku->id_buku,
+                'tanggal_pinjam' => $data['tanggal_pinjam'],
+                'tanggal_kembali' => $data['tanggal_kembali'],
+            ]);
 
             return redirect()->route('peminjaman.index')->with('success','Peminjaman berhasil ditambahkan.');
         });
@@ -85,7 +91,10 @@ class PeminjamanController extends Controller
      */
     public function show(string $id_peminjaman)
     {
-        $peminjaman = Peminjaman::with(['Anggota','Buku'])->findOrFail($id_peminjaman);
+        $peminjaman = Peminjaman::with(['Anggota','Buku'])
+            ->where('uuid', $id_peminjaman)
+            ->orWhere('id_peminjaman', $id_peminjaman)
+            ->firstOrFail();
         return view('peminjaman.show', compact('peminjaman'));
     }
 
@@ -94,7 +103,7 @@ class PeminjamanController extends Controller
      */
     public function edit(string $id_peminjaman)
     {
-        $peminjaman = Peminjaman::findOrFail($id_peminjaman);
+        $peminjaman = Peminjaman::where('uuid', $id_peminjaman)->orWhere('id_peminjaman', $id_peminjaman)->firstOrFail();
         $anggotas = Anggota::all();
         $bukus = Buku::all();
         return view('peminjaman.edit', compact('peminjaman','anggotas','bukus'));
@@ -105,18 +114,29 @@ class PeminjamanController extends Controller
      */
     public function update(Request $request, string $id_peminjaman)
     {
-        $peminjaman = Peminjaman::findOrFail($id_peminjaman);
+        $peminjaman = Peminjaman::where('uuid', $id_peminjaman)->orWhere('id_peminjaman', $id_peminjaman)->firstOrFail();
 
         $data = $request->validate([
-            'anggota_id' => 'required|exists:table_anggota,id_anggota',
-            'buku_id' => 'required|exists:table_buku,id_buku',
+            'anggota_id' => 'required',
+            'buku_id' => 'required',
             'tanggal_pinjam' => 'required|date',
             'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
         ]);
 
         return DB::transaction(function () use ($peminjaman, $data) {
+            // resolve anggota and buku (accept uuid or id)
+            $anggota = Anggota::where('uuid', $data['anggota_id'])->orWhere('id_anggota', $data['anggota_id'])->first();
+            if (! $anggota) {
+                return redirect()->back()->withErrors(['anggota_id' => 'Anggota tidak ditemukan'])->withInput();
+            }
+
+            $newBuku = Buku::where('uuid', $data['buku_id'])->orWhere('id_buku', $data['buku_id'])->lockForUpdate()->first();
+            if (! $newBuku) {
+                return redirect()->back()->withErrors(['buku_id' => 'Buku tidak ditemukan'])->withInput();
+            }
+
             // If book changed, adjust stock: return one to old book, take one from new book
-            if ($peminjaman->buku_id != $data['buku_id']) {
+            if ($peminjaman->buku_id != $newBuku->id_buku) {
                 // restore stock to previous book
                 $old = Buku::lockForUpdate()->find($peminjaman->buku_id);
                 if ($old) {
@@ -124,17 +144,20 @@ class PeminjamanController extends Controller
                     $old->save();
                 }
 
-                // decrement new book
-                $new = Buku::lockForUpdate()->find($data['buku_id']);
-                if (! $new || $new->persediaan <= 0) {
+                if ($newBuku->persediaan <= 0) {
                     return redirect()->back()->withErrors(['buku_id' => 'Buku tujuan tidak tersedia'])->withInput();
                 }
 
-                $new->persediaan = max(0, $new->persediaan - 1);
-                $new->save();
+                $newBuku->persediaan = max(0, $newBuku->persediaan - 1);
+                $newBuku->save();
             }
 
-            $peminjaman->update($data);
+            $peminjaman->update([
+                'anggota_id' => $anggota->id_anggota,
+                'buku_id' => $newBuku->id_buku,
+                'tanggal_pinjam' => $data['tanggal_pinjam'],
+                'tanggal_kembali' => $data['tanggal_kembali'],
+            ]);
 
             return redirect()->route('peminjaman.index')->with('success','Peminjaman berhasil diperbarui');
         });
@@ -145,7 +168,7 @@ class PeminjamanController extends Controller
      */
     public function destroy(string $id_peminjaman)
     {
-        $peminjaman = Peminjaman::findOrFail($id_peminjaman);
+        $peminjaman = Peminjaman::where('uuid', $id_peminjaman)->orWhere('id_peminjaman', $id_peminjaman)->firstOrFail();
 
         return DB::transaction(function () use ($peminjaman) {
             // return book stock

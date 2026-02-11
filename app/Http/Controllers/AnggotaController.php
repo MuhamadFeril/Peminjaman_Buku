@@ -31,17 +31,17 @@ class AnggotaController extends Controller
     }
     public function show($id)
     {
-        $anggota = Anggota::findOrFail($id);
+        $anggota = Anggota::where('uuid', $id)->orWhere('id_anggota', $id)->firstOrFail();
         return view('anggota.show', compact('anggota'));
     }
     public function edit($id)
     {
-        $anggota = Anggota::findOrFail($id);
+        $anggota = Anggota::where('uuid', $id)->orWhere('id_anggota', $id)->firstOrFail();
         return view('anggota.edit', compact('anggota'));
     }
     public function update(Request $request, $id)
     {
-        $anggota = Anggota::findOrFail($id);
+        $anggota = Anggota::where('uuid', $id)->orWhere('id_anggota', $id)->firstOrFail();
 
         $data = $request->validate([
             'nama' => 'required|string|max:255',
@@ -55,7 +55,7 @@ class AnggotaController extends Controller
     }
     public function destroy($id)
     {
-        $anggota = Anggota::findOrFail($id);
+        $anggota = Anggota::where('uuid', $id)->orWhere('id_anggota', $id)->firstOrFail();
         $anggota->delete();
         return redirect()->route('anggota.index')->with('success','Anggota berhasil dihapus.');
     }

@@ -96,8 +96,34 @@ class SearchHelper
 
         return AnggotaResource::collection($results);
     }   
-    public static function searchPeminjaman($keyword)
+    public static function searchPeminjaman($keyword, $perPage = null)
     {
+        // If pagination requested, return paginated results without caching
+        if (!empty($perPage) && is_int($perPage) && $perPage > 0) {
+            $query = Peminjaman::where('id_peminjaman', 'like', "%{$keyword}%")
+                                ->orWhere('status', 'like', "%{$keyword}%")
+                                ->orWhereHas('buku', function ($query) use ($keyword) {
+                                    $query->where('judul', 'like', "%{$keyword}%");
+                                })
+                                ->orWhereHas('anggota', function ($query) use ($keyword) {
+                                    $query->where('nama', 'like', "%{$keyword}%");
+                                });
+
+            $paginator = $query->orderBy('created_at', 'desc')
+                               ->paginate($perPage)
+                               ->appends(['search' => $keyword, 'per_page' => $perPage]);
+
+            $transformed = PeminjamanResource::collection($paginator->items())->resolve();
+            $paginatorArray = collect($paginator)->all() + ['data' => $transformed];
+
+            if (empty($paginatorArray['total'])) {
+                $paginatorArray['from'] = 0;
+                $paginatorArray['to'] = 0;
+            }
+
+            return $paginatorArray;
+        }
+
         // Cache key berdasarkan keyword agar unik
         $cacheKey = "search_peminjaman_" . md5($keyword);
 

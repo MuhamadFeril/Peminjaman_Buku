@@ -114,7 +114,7 @@ class BukuHandler
 
 
     // 2. Simpan ke Database
-    return \App\Models\Buku::create($data);
+    return Buku::create($data);
 }
     public function UpdateBuku($id, array $data): ?Buku { return $this->update($id, $data); }
     public function DeleteBuku($id): bool { return $this->delete($id); }

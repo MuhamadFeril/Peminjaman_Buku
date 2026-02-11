@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\PeminjamanController;
@@ -25,6 +26,22 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Local debug route to inspect incoming cookies/headers/session
+if (app()->environment('local')) {
+    Route::get('debug/cookies', function (Request $request) {
+        return response()->json([
+            'cookies' => $request->cookies->all(),
+            'headers' => [
+                'cookie' => $request->header('cookie'),
+                'x-xsrf-token' => $request->header('x-xsrf-token'),
+                'referer' => $request->header('referer'),
+            ],
+            'session_has_token' => session()->has('_token'),
+            'session_id' => session()->getId(),
+        ]);
+    });
+}
+
 
 
 // Authentication routes (always reachable)
@@ -39,7 +56,7 @@ Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 // Public viewing routes (GET) - available to all devices/users
 Route::get('buku', [BukuController::class, 'index'])->name('buku.index');
 Route::get('peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
-Route::get('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
+// Route 'peminjaman/{id}' moved below protected routes to avoid capturing 'create' etc.
 
 // Protected routes: creation/modification require auth + permissions
 Route::middleware('auth')->group(function () {
@@ -81,3 +98,6 @@ Route::middleware('auth')->group(function () {
 
 // Public single-book route moved below to avoid catching 'create' and other specific paths
 Route::get('buku/{id_buku}', [BukuController::class, 'show'])->name('buku.show');
+
+// Public peminjaman show route (placed after protected routes)
+Route::get('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
