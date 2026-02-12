@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Helpers\ResponseHelper;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
@@ -11,27 +10,43 @@ use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
 {
-    /**
-     * The path to your application's "home" route.
-     *
-     * Typically, users are redirected here after authentication.
-     *
-     * @var string
-     */
     public const HOME = '/home';
 
-    /**
-     * Define your route model bindings, pattern filters, and other route configuration.
-     */
     public function boot(): void
     {
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(100)
-                ->by($request->user()?->id ?: $request->ip())
-                ->response(function () {
-                    return ResponseHelper::error(null, 'banyak permintaan, silahkan coba lagi nanti');
-                });
-        });
+      RateLimiter::for('api', function (Request $request) {
+    // Whitelist localhost: Matikan jika ingin ngetes limit sendiri
+    // if ($request->ip() === '127.0.0.1' || $request->ip() === '::1') {
+    //     return Limit::none();
+    // }
+
+    $key = $request->user()?->id ?: $request->ip();
+    $method = strtoupper($request->method());
+
+    // 1. Ambil nama tabel/resource (buku, anggota, dll)
+    $route = $request->route();
+    $resource = 'default';
+    if ($route) {
+        $uri = method_exists($route, 'uri') ? $route->uri() : ($route->getAction('uri') ?? 'default');
+        $resource = explode('/', ltrim($uri, 'api/'))[0] ?: 'default';
+    }
+
+    // 2. Bersihkan nama resource untuk jadi Key
+    $matched = preg_replace('/[^a-z0-9]/', '', strtolower($resource));
+
+    // 3. PAKSA LIMIT 5 UNTUK SEMUA METHOD (Termasuk GET)
+    // Dengan menggabungkan $method, GET akan punya hitungan sendiri sebanyak 5 kali
+    return Limit::perMinute(2)->by($key . $matched . $method)->response(function () use ($method, $matched) {
+        return response()->json([
+            'meta' => [
+                'code' => 429,
+                'status' => 'error',
+                'message' => "Limit tercapai! Request $method pada $matched maksimal 2x per menit."
+            ],
+            'data' => null
+        ], 429);
+    });
+});
 
         $this->routes(function () {
             Route::middleware('api')
@@ -41,5 +56,5 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
         });
-    }
-}
+    } // Penutup boot
+} // Penutup class

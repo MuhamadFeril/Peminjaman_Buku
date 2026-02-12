@@ -27,13 +27,19 @@ class BukuController extends Controller
    public function index(Request $request): JsonResponse
 {
         try {
-            // Menggunakan method get() untuk mengambil seluruh data tanpa pagination
-            $data = Buku::orderBy('id_buku', 'desc')->get();
+            $keyword = $request->query('search');
+            $perPage = $request->query('per_page', null);
 
-            return ResponseHelper::success(BukuResource::collection($data));
+            $buku = SearchHelper::searchBuku($keyword, $perPage ? (int) $perPage : null);
+
+            if (is_array($buku) && array_key_exists('data', $buku)) {
+                return ResponseHelper::success($buku);
+            }
+
+            return ResponseHelper::success(is_object($buku) ? $buku->toArray($request) : (array) $buku);
 
         } catch (Exception $e) {
-            return ResponseHelper::error(null, 'Gagal mengambil data: ' . $e->getMessage(), 500);
+            return ResponseHelper::error(null, 'Gagal mengambil data buku: ' . $e->getMessage(), 500);
         }
 }
    public function indexpaginate(Request $request): JsonResponse

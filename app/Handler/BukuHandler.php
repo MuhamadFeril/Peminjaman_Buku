@@ -49,6 +49,11 @@ class BukuHandler
         // Send notification
         dispatch(new SendNotificationJob("Buku baru ditambahkan: " . $buku->judul));
 
+        // Jika persediaan kosong setelah dibuat, kirim notifikasi khusus
+        if (isset($buku->persediaan) && (int) $buku->persediaan <= 0) {
+            dispatch(new SendNotificationJob("Stok habis: Buku '" . $buku->judul . "' saat ini kosong."));
+        }
+
         return $buku;
     }
 
@@ -60,15 +65,26 @@ class BukuHandler
             return null;
         }
 
+        // simpan nilai persediaan sebelum update untuk perbandingan
+        $oldStock = $existing->persediaan ?? null;
+
         $existing->update($data);
 
         // 2. HAPUS CACHE (Agar saat GET data terbaru yang muncul)
         Cache::forget('list_buku');
 
-        // 3. KIRIM NOTIFIKASI KE ANTREAN (Queue)
-        dispatch(new SendNotificationJob("Buku telah diperbarui: " . $existing->judul));
+        $fresh = $existing->fresh();
 
-        return $existing->fresh();
+        // 3. KIRIM NOTIFIKASI KE ANTREAN (Queue) - update umum
+        dispatch(new SendNotificationJob("Buku telah diperbarui: " . $fresh->judul));
+
+        // Jika sebelumnya ada stok, tetapi sekarang habis, kirim notifikasi stok habis
+        $newStock = $fresh->persediaan ?? null;
+        if (($oldStock === null || (int) $oldStock > 0) && isset($newStock) && (int) $newStock <= 0) {
+            dispatch(new SendNotificationJob("Stok habis: Buku '" . $fresh->judul . "' sekarang kosong."));
+        }
+
+        return $fresh;
     }
 
     public function delete($id): bool

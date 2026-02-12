@@ -14,6 +14,8 @@ use App\Http\Resources\PeminjamanResource;
 use App\Models\Buku;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Log;
+use App\Models\Anggota;
+
 
 
 class PeminjamanController extends Controller
@@ -35,13 +37,13 @@ class PeminjamanController extends Controller
 
                 if (auth()->check() && strtolower(trim(auth()->user()->role ?? '')) === 'admin') {
                     $query = $request->filled('anggota_id')
-                        ? \App\Models\Peminjaman::where('anggota_id', $request->anggota_id)
-                        : \App\Models\Peminjaman::query();
+                        ? Peminjaman::where('anggota_id', $request->anggota_id)
+                        : Peminjaman::query();
                 } else {
                     if (! $request->filled('anggota_id')) {
                         return ResponseHelper::error(null, 'Untuk user umum, sertakan parameter anggota_id untuk melihat riwayat Anda.', 403);
                     }
-                    $query = \App\Models\Peminjaman::where('anggota_id', $request->anggota_id);
+                    $query = Peminjaman::where('anggota_id', $request->anggota_id);
                 }
 
                 $paginator = $query->orderBy('created_at', 'desc')
@@ -134,7 +136,7 @@ class PeminjamanController extends Controller
             }
 
             // Additional simple checks: anggota and buku exist
-            if (! \App\Models\Anggota::find($data['anggota_id'])) {
+            if (! Anggota::find($data['anggota_id'])) {
                 return ResponseHelper::error(null, 'Anggota tidak ditemukan.', 404);
             }
             $buku = Buku::find($data['buku_id']);

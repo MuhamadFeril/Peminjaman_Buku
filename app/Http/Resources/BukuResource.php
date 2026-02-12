@@ -31,7 +31,7 @@ class BukuResource extends JsonResource
             'id'           => $id,
             'judul'        => $this->judul ?? '-',
             'penulis'      => $penulis,
-            'persediaan'   => $available ? 'Ya' : 'Tidak',
+            'persediaan'   => $persediaanVal !== null ? (int) $persediaanVal : null,
             // Format d-m-Y tetap dipertahankan untuk tahun terbit
             'tahun_terbit' => !empty($this->tahun_terbit) ? Carbon::parse($this->tahun_terbit)->format('d-m-Y') : '-',
             

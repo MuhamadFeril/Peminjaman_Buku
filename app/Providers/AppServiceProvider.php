@@ -13,7 +13,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+       // Bind repository interfaces to concrete implementations
+       $this->app->bind(
+           \App\Repositories\interfaces\PeminjamanRepositoryInterface::class,
+           \App\Repositories\PeminjamanRepository::class
+       );
+
+       $this->app->bind(
+           \App\Repositories\interfaces\BukuRepositoryInterface::class,
+           \App\Repositories\BukuRepository::class
+       );
+
+       $this->app->bind(
+           \App\Repositories\interfaces\AnggotaRepositoryInterface::class,
+           \App\Repositories\AnggotaRepository::class
+       );
     }
 
     /**

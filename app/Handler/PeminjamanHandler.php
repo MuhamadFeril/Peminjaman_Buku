@@ -81,15 +81,34 @@ class PeminjamanHandler
             throw new \Exception("Peminjaman tidak ditemukan");
         }
 
-        $updated = $this->repo->update($id, $data);
+        $result = DB::transaction(function () use ($id, $data, $existing) {
+            // if buku_id changed, restore stock to old book and decrement stock on new book
+            if (isset($data['buku_id']) && $data['buku_id'] != $existing->buku_id) {
+                // increment old book stock
+                $oldBuku = Buku::lockForUpdate()->find($existing->buku_id);
+                if ($oldBuku) {
+                    $oldBuku->increment('persediaan');
+                }
 
-        // 2. HAPUS CACHE (Agar saat GET data terbaru yang muncul)
+                // decrement new book stock
+                $newBuku = Buku::lockForUpdate()->find($data['buku_id']);
+                if (! $newBuku) {
+                    throw new \Exception("Buku tujuan tidak ditemukan");
+                }
+                if ($newBuku->persediaan <= 0) {
+                    throw new \Exception("Buku tujuan tidak tersedia");
+                }
+                $newBuku->decrement('persediaan');
+            }
+
+            return $this->repo->update($id, $data);
+        });
+
+        // clear cache and notify
         Cache::forget('list_peminjaman');
-
-        // 3. KIRIM NOTIFIKASI KE ANTREAN (Queue)
         dispatch(new SendNotificationJob("Peminjaman telah diperbarui: ID " . $id));
 
-        return $updated;
+        return $result;
     }
 
     public function deletePeminjaman($id)
@@ -100,12 +119,18 @@ class PeminjamanHandler
             throw new \Exception("Peminjaman tidak ditemukan");
         }
 
-        $result = $this->repo->delete($id);
+        $result = DB::transaction(function () use ($id, $existing) {
+            // increment stock back to the book
+            $buku = Buku::lockForUpdate()->find($existing->buku_id);
+            if ($buku) {
+                $buku->increment('persediaan');
+            }
 
-        // 2. HAPUS CACHE
+            return $this->repo->delete($id);
+        });
+
+        // clear cache and notify
         Cache::forget('list_peminjaman');
-
-        // 3. KIRIM NOTIFIKASI KE ANTREAN (Queue)
         dispatch(new SendNotificationJob("Peminjaman telah dihapus: ID " . $id));
 
         return $result;
