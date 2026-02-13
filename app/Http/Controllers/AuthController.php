@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-
+use App\Models\Anggota;
+use Illuminate\Support\Facades\Log;
 class AuthController extends Controller
 {
     public function showLogin()
@@ -49,6 +50,19 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
             'role' => $data['role'] ?? 'user',
         ]);
+
+        // Create a default Anggota (member card) for the newly registered user
+        try {
+            Anggota::create([
+                'nama' => $data['name'],
+                'user_id' => $user->id,
+                'alamat' => '',
+                'nomor' => 0,
+            ]);
+        } catch (\Exception $e) {
+            // If anggota table/schema is not present or creation fails, log and continue
+            Log::warning('Failed to auto-create Anggota for user: ' . $user->id . ' - ' . $e->getMessage());
+        }
 
         // Do not auto-login after registration. Redirect to login page so user can
         // explicitly authenticate (prevents confusion where to go after registering).

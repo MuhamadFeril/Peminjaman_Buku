@@ -7,6 +7,7 @@ use App\Models\Peminjaman;
 use App\Models\Anggota;
 use App\Models\Buku;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PeminjamanController extends Controller
 {
@@ -26,37 +27,39 @@ class PeminjamanController extends Controller
             return view('peminjaman.index', compact('peminjamans'));
         }
 
-    /**
+    /*
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         $bukus = Buku::where('persediaan','>',0)->get();
-        return view('peminjaman.create', compact('bukus'));
+        $selected = $request->query('buku');
+        return view('peminjaman.create', compact('bukus','selected'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(\App\Http\Requests\PeminjamanStoreRequest $request)
     {
        $user = auth()->user();
-       
-       // Cari anggota berdasarkan user_id atau email atau nama
-       // Sesuaikan logika ini dengan struktur database Anda
-       $anggota = Anggota::where('user_id', $user->id)
-                         ->orWhere('email', $user->email)
-                         ->first();
+
+       // Cari anggota berdasarkan user_id terlebih dahulu.
+       // Beberapa schema tidak menyimpan email di table_anggota, jadi jangan query kolom yang tidak ada.
+       $anggota = null;
+       if ($user) {
+           $anggota = Anggota::where('user_id', $user->id)->first();
+           // fallback: coba cari berdasarkan nama anggota yang cocok dengan nama user
+           if (! $anggota && ! empty($user->name)) {
+               $anggota = Anggota::where('nama', $user->name)->first();
+           }
+       }
        
        if (!$anggota) {
            return redirect()->back()->withErrors(['error' => 'Anggota terkait dengan user ini tidak ditemukan']);
        }
 
-       $data = $request->validate([
-           'buku_id' => 'required',
-           'tanggal_pinjam' => 'required|date',
-           'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
-       ]);
+       $data = $request->validated();
 
        $data['anggota_id'] = $anggota->id_anggota;
 
@@ -104,6 +107,16 @@ class PeminjamanController extends Controller
     public function edit(string $id_peminjaman)
     {
         $peminjaman = Peminjaman::where('uuid', $id_peminjaman)->orWhere('id_peminjaman', $id_peminjaman)->firstOrFail();
+        $user = auth()->user();
+        if (!($user && isset($user->role) && $user->role === 'admin')) {
+            // non-admin can only edit their own peminjaman
+            if (! $peminjaman->Anggota || $peminjaman->Anggota->user_id !== $user->id) {
+                abort(403);
+            }
+            $bukus = Buku::all();
+            return view('peminjaman.edit', compact('peminjaman','bukus'));
+        }
+
         $anggotas = Anggota::all();
         $bukus = Buku::all();
         return view('peminjaman.edit', compact('peminjaman','anggotas','bukus'));
@@ -115,6 +128,13 @@ class PeminjamanController extends Controller
     public function update(Request $request, string $id_peminjaman)
     {
         $peminjaman = Peminjaman::where('uuid', $id_peminjaman)->orWhere('id_peminjaman', $id_peminjaman)->firstOrFail();
+
+        $user = auth()->user();
+        if (!($user && isset($user->role) && $user->role === 'admin')) {
+            if (! $peminjaman->Anggota || $peminjaman->Anggota->user_id !== $user->id) {
+                abort(403);
+            }
+        }
 
         $data = $request->validate([
             'anggota_id' => 'required',
@@ -169,6 +189,12 @@ class PeminjamanController extends Controller
     public function destroy(string $id_peminjaman)
     {
         $peminjaman = Peminjaman::where('uuid', $id_peminjaman)->orWhere('id_peminjaman', $id_peminjaman)->firstOrFail();
+        $user = auth()->user();
+        if (!($user && isset($user->role) && $user->role === 'admin')) {
+            if (! $peminjaman->Anggota || $peminjaman->Anggota->user_id !== $user->id) {
+                abort(403);
+            }
+        }
 
         return DB::transaction(function () use ($peminjaman) {
             // return book stock
@@ -182,5 +208,31 @@ class PeminjamanController extends Controller
 
             return redirect()->route('peminjaman.index')->with('success','Peminjaman berhasil dihapus');
         });
+    }
+
+    /**
+     * Accept a guest borrow request (does not modify stock) and store in session for admin review.
+     */
+    public function guestRequest(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:200',
+            'email' => 'required|email|max:200',
+            'buku_id' => 'required',
+            'tanggal_pinjam' => 'required|date',
+            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+        ]);
+
+        // resolve buku title for convenience (do not change stock)
+        $buku = Buku::where('uuid', $data['buku_id'])->orWhere('id_buku', $data['buku_id'])->first();
+        $data['buku_title'] = $buku ? $buku->judul : null;
+
+        // push to session as guest requests (lightweight, for demo/admin review)
+        $request->session()->push('guest_requests', $data);
+
+        // log for server-side visibility
+        Log::info('Guest borrow request added', $data);
+
+        return response()->json(['success' => true, 'message' => 'Permintaan peminjaman telah dikirim. Kami akan menghubungi Anda.']);
     }
 }

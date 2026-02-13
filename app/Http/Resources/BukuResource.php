@@ -44,8 +44,8 @@ class BukuResource extends JsonResource
 
     'updated_at' => $this->updated_at 
     ? Carbon::parse($this->updated_at)
-        ->timezone('Asia/Jakarta') // Memastikan waktu update juga WIB
-        ->format('d-m-Y H:i:s') . ' WIB' 
+        ->timezone('Asia/Jayapura') // Memastikan waktu update juga WIB
+        ->format('d-m-Y H:i:s') . ' WIT' 
     : '-', 
                 ];
 

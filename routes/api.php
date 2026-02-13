@@ -39,6 +39,13 @@ Route::middleware('auth:api')->name('api.')->group(function () {
     Route::get('buku/search', action: [BukuController::class, 'search']);
 Route::get('buku/search2', [BukuController::class, 'searchpaginate']);
     Route::apiResource('buku', BukuController::class);
+    Route::get('/buku/sampah', [BukuController::class, 'trash']);
+    // Allow POST as well for clients that send POST to view trash
+    Route::post('/buku/sampah', [BukuController::class, 'trash']);
+Route::post('/buku/kembalikan/{id}', [BukuController::class, 'restore']);
+Route::delete('/buku/hapus-permanen/{id}', [BukuController::class, 'forceDelete']);
+// Also accept POST for clients that send POST instead of DELETE (convenience)
+Route::post('/buku/hapus-permanen/{id}', [BukuController::class, 'forceDelete']);
     // Route pencarian peminjaman harus dideklarasikan sebelum resource
     Route::get('peminjaman/search', [PeminjamanController::class, 'search']);
     // Riwayat peminjaman (user-specific)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Anggota;
+use Illuminate\Support\Facades\Log;
 
 class AnggotaController extends Controller
 {
@@ -17,15 +18,42 @@ class AnggotaController extends Controller
     {
         return view('anggota.create');
     }
+
+    /**
+     * Show a self-service form for the current user to create their Anggota card.
+     */
+    public function createSelfForm(Request $request)
+    {
+        // If user already has anggota, redirect back
+        $user = $request->user();
+        if ($user && Anggota::where('user_id', $user->id)->exists()) {
+            return redirect()->route('peminjaman.create')->with('success', 'Kartu anggota sudah ada.');
+        }
+        return view('anggota.create');
+    }
     public function store(Request $request)
     {
         $data = $request->validate([
             'nama' => 'required|string|max:255',
             'alamat' => 'nullable|string',
+            // accept either 'nomor' or 'telepon' from form
+            'nomor' => 'nullable|numeric',
             'telepon' => 'nullable|string|max:50',
         ]);
 
-        Anggota::create($data);
+        // map telepon -> nomor if nomor not provided
+        if (empty($data['nomor']) && ! empty($data['telepon'])) {
+            $data['nomor'] = preg_replace('/[^0-9]/', '', $data['telepon']);
+        }
+
+        // Ensure nomor has a value for DB (integer column)
+        $data['nomor'] = isset($data['nomor']) ? (int) $data['nomor'] : 0;
+
+        Anggota::create([
+            'nama' => $data['nama'],
+            'alamat' => $data['alamat'] ?? '',
+            'nomor' => $data['nomor'],
+        ]);
 
         return redirect()->route('anggota.index')->with('success','Anggota berhasil ditambahkan.');
     }
@@ -46,10 +74,20 @@ class AnggotaController extends Controller
         $data = $request->validate([
             'nama' => 'required|string|max:255',
             'alamat' => 'nullable|string',
+            'nomor' => 'nullable|numeric',
             'telepon' => 'nullable|string|max:50',
         ]);
 
-        $anggota->update($data);
+        if (empty($data['nomor']) && ! empty($data['telepon'])) {
+            $data['nomor'] = preg_replace('/[^0-9]/', '', $data['telepon']);
+        }
+        $data['nomor'] = isset($data['nomor']) ? (int) $data['nomor'] : $anggota->nomor ?? 0;
+
+        $anggota->update([
+            'nama' => $data['nama'],
+            'alamat' => $data['alamat'] ?? '',
+            'nomor' => $data['nomor'],
+        ]);
 
         return redirect()->route('anggota.index')->with('success','Anggota berhasil diperbarui.');
     }
@@ -60,5 +98,79 @@ class AnggotaController extends Controller
         return redirect()->route('anggota.index')->with('success','Anggota berhasil dihapus.');
     }
 
+
+    /**
+     * Create a simple Anggota record for the currently authenticated user.
+     * This is intended for regular users who need a member card created for them.
+     */
+    public function createSelf(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->back()->withErrors(['error' => 'User tidak terautentikasi']);
+        }
+
+        // If anggota already exists, redirect
+        $exists = Anggota::where('user_id', $user->id)->first();
+        if ($exists) {
+            return redirect()->back()->with('success','Kartu anggota sudah ada.');
+        }
+
+        try {
+            Anggota::create([
+                'nama' => $user->name,
+                'user_id' => $user->id,
+                // populate non-nullable fields with safe defaults
+                'alamat' => '',
+                'nomor' => 0,
+            ]);
+        } catch (\Exception $e) {
+            // log and show friendly message
+            Log::error("Failed creating Anggota for user {$user->id}: {$e->getMessage()}");
+            return redirect()->back()->withErrors(['error' => 'Gagal membuat kartu anggota: ' . $e->getMessage()]);
+        }
+
+        return redirect()->back()->with('success','Kartu anggota berhasil dibuat.');
+    }
+
+    /**
+     * Store anggota created from self-service form (with full details).
+     */
+    public function storeSelf(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $data = $request->validate([
+            'nama' => 'required|string|max:255',
+            'alamat' => 'nullable|string',
+            'telepon' => 'nullable|string|max:50',
+            'nomor' => 'nullable|numeric',
+        ]);
+
+        if (empty($data['nomor']) && ! empty($data['telepon'])) {
+            $data['nomor'] = preg_replace('/[^0-9]/', '', $data['telepon']);
+        }
+
+        $data['nomor'] = isset($data['nomor']) ? (int) $data['nomor'] : 0;
+
+        try {
+            $anggota = Anggota::create([
+                'nama' => $data['nama'],
+                'alamat' => $data['alamat'] ?? '',
+                'nomor' => $data['nomor'],
+                'user_id' => $user->id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed creating Anggota self for user '.$user->id.': '.$e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Gagal membuat kartu anggota: ' . $e->getMessage()]);
+        }
+
+        // After creating, redirect to where user came from if provided
+        $redirect = $request->input('redirect') ?: route('peminjaman.create');
+        return redirect($redirect)->with('success', 'Kartu anggota berhasil dibuat.');
+    }
 
 }   

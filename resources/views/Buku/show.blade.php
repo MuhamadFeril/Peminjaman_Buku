@@ -20,7 +20,7 @@
             <p><strong>Persediaan:</strong> <span class="badge bg-info">{{ $buku->persediaan }}</span></p>
             
             <div class="mt-4">
-                    @if(auth()->user()->role === 'admin')
+                @if(auth()->check() && auth()->user()->role === 'admin')
                     <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-secondary">Edit</a>
                     <form action="{{ route('buku.destroy', $buku->uuid ?? $buku->id_buku) }}" method="POST" style="display:inline">
                         @csrf
@@ -29,6 +29,32 @@
                     </form>
                 @endif
                 <a href="{{ route('buku.index') }}" class="btn btn-outline-secondary">Kembali</a>
+                @if($buku->persediaan > 0)
+                    @auth
+                        <a href="{{ route('peminjaman.create', ['buku' => $buku->uuid ?? $buku->id_buku]) }}" class="btn btn-primary ms-2 btn-raise">Pinjam Sekarang</a>
+                    @else
+                        <div class="btn-group ms-2">
+                            <a href="{{ route('register') }}" class="btn btn-outline-primary">Daftar</a>
+                            <button type="button" class="btn btn-primary" onclick="openGuestRequest('{{ $buku->uuid ?? $buku->id_buku }}')">Ajukan sebagai Tamu</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="(function(){ navigator.clipboard && navigator.clipboard.writeText(window.location.href); alert('Link disalin ke clipboard'); })()">Bagikan</button>
+                        </div>
+                    @endauth
+                @else
+                    <button class="btn btn-secondary ms-2" disabled>Stok Habis</button>
+                @endif
+            </div>
+
+            <div class="mt-4 card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Cara Meminjam</h5>
+                    <ol class="mb-0">
+                        <li>Login ke akun Anda (atau daftar jika belum punya)</li>
+                        <li>Buka halaman buku yang ingin dipinjam</li>
+                        <li>Tekan tombol "Pinjam Sekarang" untuk membuka formulir peminjaman</li>
+                        <li>Pilih tanggal pinjam dan tanggal kembali lalu klik "Simpan Peminjaman"</li>
+                        <li>Stok akan otomatis dikurangi, dan Anda bisa melihat daftar peminjaman di halaman Peminjaman</li>
+                    </ol>
+                </div>
             </div>
         </div>
     </div>
@@ -43,4 +69,5 @@
         animation: fadeIn 0.5s ease-in-out;
     }
 </style>
+@include('partials.guest_request_modal')
 @endsection

@@ -36,12 +36,12 @@ class RouteServiceProvider extends ServiceProvider
 
     // 3. PAKSA LIMIT 5 UNTUK SEMUA METHOD (Termasuk GET)
     // Dengan menggabungkan $method, GET akan punya hitungan sendiri sebanyak 5 kali
-    return Limit::perMinute(2)->by($key . $matched . $method)->response(function () use ($method, $matched) {
+    return Limit::perMinute(5)->by($key . $matched . $method)->response(function () use ($method, $matched) {
         return response()->json([
             'meta' => [
                 'code' => 429,
                 'status' => 'error',
-                'message' => "Limit tercapai! Request $method pada $matched maksimal 2x per menit."
+                'message' => "Limit tercapai! Request $method pada $matched maksimal 5x per menit."
             ],
             'data' => null
         ], 429);

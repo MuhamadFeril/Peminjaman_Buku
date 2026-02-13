@@ -13,6 +13,7 @@ use App\Helpers\ResponseHelper;
 use App\Models\Buku;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendNotificationJob;
 use Exception;
 
@@ -208,5 +209,71 @@ class BukuController extends Controller
         } catch (Exception $e) {
             return ResponseHelper::error(null, 'Gagal: ' . $e->getMessage(), 500);
         }
+}
+// 1. LIHAT ISI TEMPAT SAMPAH
+public function trash(): JsonResponse
+{
+    try {
+        $bukuTerhapus = Buku::onlyTrashed()->get();
+        return ResponseHelper::success(BukuResource::collection($bukuTerhapus));
+    } catch (Exception $e) {
+        Log::error('Buku::trash - gagal mengambil sampah', ['error' => $e->getMessage()]);
+        return ResponseHelper::error(null, 'Gagal mengambil data sampah: ' . $e->getMessage(), 500);
+    }
+}
+
+// 2. KEMBALIKAN DATA (RESTORE)
+public function restore($id): JsonResponse
+{
+    // Hanya admin yang boleh merestore
+    if (! auth()->check() || strtolower(trim(auth()->user()->role ?? '')) !== 'admin') {
+        Log::info('Buku::restore - unauthorized attempt', ['user_id' => optional(auth()->user())->id]);
+        return ResponseHelper::error(null, 'Unauthorized. Hanya admin yang diperbolehkan.', 403);
+    }
+
+    try {
+        $buku = Buku::onlyTrashed()->find($id);
+        if (! $buku) {
+            return ResponseHelper::error(null, 'Data tidak ada di sampah', 404);
+        }
+
+        $buku->restore();
+        $this->clearBukuCache($id);
+
+        return ResponseHelper::success(new BukuResource($buku), 'Buku berhasil dikembalikan!');
+    } catch (Exception $e) {
+        Log::error('Buku::restore - gagal merestore', ['error' => $e->getMessage(), 'id' => $id]);
+        return ResponseHelper::error(null, 'Gagal mengembalikan data: ' . $e->getMessage(), 500);
+    }
+}
+
+// 3. HAPUS SELAMANYA (FORCE DELETE)
+public function forceDelete($id): JsonResponse
+{
+    // Hanya admin yang boleh melakukan force delete
+    if (! auth()->check() || strtolower(trim(auth()->user()->role ?? '')) !== 'admin') {
+        Log::info('Buku::forceDelete - unauthorized attempt', ['user_id' => optional(auth()->user())->id]);
+        return ResponseHelper::error(null, 'Unauthorized. Hanya admin yang diperbolehkan.', 403);
+    }
+
+    try {
+        $buku = Buku::onlyTrashed()->find($id);
+        if (! $buku) {
+            return ResponseHelper::error(null, 'Data tidak ditemukan', 404);
+        }
+
+        // Hapus file cover jika ada
+        if (! empty($buku->cover) && Storage::disk('public')->exists($buku->cover)) {
+            try { Storage::disk('public')->delete($buku->cover); } catch (Exception $ex) { Log::warning('Gagal menghapus cover file', ['file' => $buku->cover, 'error' => $ex->getMessage()]); }
+        }
+
+        $buku->forceDelete();
+        $this->clearBukuCache($id);
+
+        return ResponseHelper::success(null, 'Buku berhasil dihapus permanen');
+    } catch (Exception $e) {
+        Log::error('Buku::forceDelete - gagal memusnahkan', ['error' => $e->getMessage(), 'id' => $id]);
+        return ResponseHelper::error(null, 'Gagal menghapus permanen: ' . $e->getMessage(), 500);
+    }
 }
 }

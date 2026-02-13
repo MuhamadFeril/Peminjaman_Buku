@@ -94,6 +94,12 @@ Route::middleware('auth')->group(function () {
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Allow authenticated users to create their own Anggota card if missing
+    Route::post('anggota/create-self', [\App\Http\Controllers\AnggotaController::class, 'createSelf'])->name('anggota.createSelf');
+    // Self-service create form (GET) and store (POST) for non-admin users
+    Route::get('anggota/create-self-form', [\App\Http\Controllers\AnggotaController::class, 'createSelfForm'])->name('anggota.createSelfForm');
+    Route::post('anggota/store-self', [\App\Http\Controllers\AnggotaController::class, 'storeSelf'])->name('anggota.storeSelf');
 });
 
 // Public single-book route moved below to avoid catching 'create' and other specific paths
@@ -101,3 +107,6 @@ Route::get('buku/{id_buku}', [BukuController::class, 'show'])->name('buku.show')
 
 // Public peminjaman show route (placed after protected routes)
 Route::get('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
+
+// Guest borrow request (UI -> saves to session for admin review)
+Route::post('peminjaman/guest-request', [PeminjamanController::class, 'guestRequest'])->name('peminjaman.guestRequest');
