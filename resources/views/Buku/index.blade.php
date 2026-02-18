@@ -12,10 +12,11 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <div class="table-responsive shadow-sm bg-white rounded d-none d-md-block">
+    <div class="table-responsive table-card shadow-sm bg-white rounded d-none d-md-block">
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
+                    <th style="width:90px">Cover</th>
                     <th style="width:80px">#</th>
                     <th>Judul</th>
                     <th>Penulis</th>
@@ -27,6 +28,13 @@
             <tbody>
                 @foreach($bukus as $index => $buku)
                     <tr>
+                        <td>
+                            @if(!empty($buku->cover_buku))
+                                <img src="{{ asset('storage/' . $buku->cover_buku) }}" alt="{{ $buku->judul }}" class="book-thumbnail rounded">
+                            @else
+                                <div class="book-thumbnail placeholder rounded d-flex align-items-center justify-content-center">No Image</div>
+                            @endif
+                        </td>
                         <td>{{ ($bukus->currentPage()-1) * $bukus->perPage() + $index + 1 }}</td>
                         <td>{{ $buku->judul }}</td>
                         <td>{{ $buku->penulis ?? '-' }}</td>
@@ -112,6 +120,16 @@
     .animate-slide-in {
         animation: slideIn 0.5s ease-in-out;
     }   
+</style>
+<style>
+    /* Table thumbnail and row-card effect */
+    .book-thumbnail{width:72px;height:72px;object-fit:cover;border-radius:8px;display:block}
+    .book-thumbnail.placeholder{background:#f3f4f6;color:#6b7280;font-size:12px}
+    .table-responsive.table-card tbody tr{background:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(15,23,42,.04);transition:transform .18s ease,box-shadow .18s ease}
+    .table-responsive.table-card tbody tr:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(15,23,42,.08)}
+    /* Make table rows appear spaced by using border-collapse separate
+       and adding margin via box-shadow area (works best with white page bg) */
+    .table-responsive.table-card .table{border-collapse:separate;border-spacing:0 12px}
 </style>
 @include('partials.guest_request_modal')
 @endsection

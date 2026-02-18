@@ -92,7 +92,7 @@
             try { document.getElementById('bukuSelect').value = '{{ $selected }}'; } catch(e){}
         @endif
 
-        // Show simple selected book title below select (mobile UX)
+        // Showimple selected book title below select (mobile UX)
         var sel = document.getElementById('bukuSelect');
         var info = document.createElement('div');
         info.className = 'mt-2 text-muted small';
@@ -106,34 +106,3 @@
     });
 </script>
 @endsection
-<div>
-                        var opt = sel.options[sel.selectedIndex];
-                        info.textContent = opt && opt.value ? ('Dipilih: ' + opt.text) : '';
-
-                        if(card && opt && opt.value){
-                            card.style.display = 'block';
-                            cardImg.src = opt.getAttribute('data-cover') || 'https://via.placeholder.com/150?text=No+Image';
-                            cardTitle.textContent = opt.getAttribute('data-judul') || '';
-                            var metaParts = [];
-                            var penulis = opt.getAttribute('data-penulis');
-                            var tahun = opt.getAttribute('data-tahun');
-                            if(penulis) metaParts.push(penulis);
-                            if(tahun) metaParts.push(tahun);
-                            cardMeta.textContent = metaParts.join(' | ');
-                            cardExtra.textContent = '';
-                        } else if(card){
-                            card.style.display = 'none';
-                        }
-                    }
-
-                    sel.addEventListener('change', updateInfo);
-                    updateInfo();
-                }
-            });
-            </script>
-            </select>
-            @error('buku_id') <span class="text-danger small">{{ $message }}</span> @enderror
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label

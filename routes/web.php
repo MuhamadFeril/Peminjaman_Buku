@@ -6,7 +6,7 @@ use App\Http\Controllers\BukuController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\DashboardController;
- use App\Http\Controllers\ProfileController;// Authentication
+use App\Http\Controllers\ProfileController; // Authentication
 use App\Http\Controllers\AuthController;
 /*
 |--------------------------------------------------------------------------
@@ -23,7 +23,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard.index');
     }
-    return redirect()->route('login');
+    return view('home');
 });
 
 // Local debug route to inspect incoming cookies/headers/session
@@ -73,7 +73,9 @@ Route::middleware('auth')->group(function () {
     });
 
     // Peminjaman management
-    Route::get('peminjaman/create', [PeminjamanController::class, 'create'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.create');
+    // Allow authenticated users to view the 'create' form so they can create an anggota card
+    // (actual storing of peminjaman remains protected by permission middleware)
+    Route::get('peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
     Route::post('peminjaman', [PeminjamanController::class, 'store'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.store');
     Route::get('peminjaman/{id_peminjaman}/edit', [PeminjamanController::class, 'edit'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.edit');
     Route::put('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'update'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.update');

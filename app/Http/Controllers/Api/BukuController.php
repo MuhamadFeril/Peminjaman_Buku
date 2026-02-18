@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendNotificationJob;
 use Exception;
+use Throwable;
 
 class BukuController extends Controller
 {
@@ -194,7 +195,7 @@ class BukuController extends Controller
 {
     $keyword = $request->query('search'); 
     // Pastikan mengambil input per_page, jika tidak ada baru gunakan default 2
-    $perPage = $request->query('per_page', 10); 
+    $perPage = $request->query('per_page', 2); 
 
     try {
         // Kirimkan variabel $perPage ke helper
@@ -216,7 +217,7 @@ public function trash(): JsonResponse
     try {
         $bukuTerhapus = Buku::onlyTrashed()->get();
         return ResponseHelper::success(BukuResource::collection($bukuTerhapus));
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         Log::error('Buku::trash - gagal mengambil sampah', ['error' => $e->getMessage()]);
         return ResponseHelper::error(null, 'Gagal mengambil data sampah: ' . $e->getMessage(), 500);
     }

@@ -42,7 +42,7 @@ Route::get('buku/search2', [BukuController::class, 'searchpaginate']);
     Route::get('/buku/sampah', [BukuController::class, 'trash']);
     // Allow POST as well for clients that send POST to view trash
     Route::post('/buku/sampah', [BukuController::class, 'trash']);
-Route::post('/buku/kembalikan/{id}', [BukuController::class, 'restore']);
+Route::put('/buku/kembalikan/{id}', [BukuController::class, 'restore']);
 Route::delete('/buku/hapus-permanen/{id}', [BukuController::class, 'forceDelete']);
 // Also accept POST for clients that send POST instead of DELETE (convenience)
 Route::post('/buku/hapus-permanen/{id}', [BukuController::class, 'forceDelete']);
