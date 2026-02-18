@@ -27,7 +27,7 @@
 
             <h2 class="text-3xl font-bold text-gray-800 mb-4 animate__animated animate__fadeInRight">Selamat Datang</h2>
             <p class="text-gray-600 leading-relaxed mb-8 animate__animated animate__fadeInUp">
-            Kami hadir untuk memudahkan akses ke dunia literasi. Jelajahi koleksi buku kami, pinjam dengan mudah, dan nikmati pengalaman membaca yang menyenangkan. Bergabunglah dengan komunitas pembaca kami dan temukan inspirasi di setiap halaman dan menjamin keamanan datamu!    
+            Kami hadir untuk memudahkan akses ke dunia literasi. Jelajahi koleksi buku kami, pinjam dengan mudah, dan nikmati pengalaman membaca yang menyenangkan. Bergabunglah dengan komunitas pembaca kami dan temukan inspirasi di setiap halaman,kami juga menjamin keamanan datamu!    
         </p>
 
             <div class="grid grid-cols-2 gap-4 animate__animated animate__fadeInUp animate__delay-1s">

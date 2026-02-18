@@ -24,12 +24,16 @@ class AnggotaController extends Controller
      */
     public function createSelfForm(Request $request)
     {
-        // If user already has anggota, redirect back
         $user = $request->user();
-        if ($user && Anggota::where('user_id', $user->id)->exists()) {
-            return redirect()->route('peminjaman.create')->with('success', 'Kartu anggota sudah ada.');
+        if (! $user) {
+            return redirect()->route('login');
         }
-        return view('anggota.create');
+
+        // If anggota exists for this user, show the same self-service form pre-filled
+        $anggota = Anggota::where('user_id', $user->id)->first();
+
+        // pass existing anggota (if any) to the create view so user can complete it
+        return view('anggota.create', compact('anggota'));
     }
     public function store(Request $request)
     {
@@ -143,21 +147,10 @@ class AnggotaController extends Controller
             return redirect()->back()->with('success','Kartu anggota sudah ada.');
         }
 
-        try {
-            Anggota::create([
-                'nama' => $user->name,
-                'user_id' => $user->id,
-                // populate non-nullable fields with safe defaults
-                'alamat' => '',
-                'nomor' => 0,
-            ]);
-        } catch (\Exception $e) {
-            // log and show friendly message
-            Log::error("Failed creating Anggota for user {$user->id}: {$e->getMessage()}");
-            return redirect()->back()->withErrors(['error' => 'Gagal membuat kartu anggota: ' . $e->getMessage()]);
-        }
-
-        return redirect()->back()->with('success','Kartu anggota berhasil dibuat.');
+        // Require the user to fill full details via the self-service form (alamat & nomor).
+        // Redirect to the self-service create form. Preserve redirect param if provided.
+        $redirect = $request->input('redirect') ?: route('peminjaman.create');
+        return redirect()->route('anggota.createSelfForm', ['redirect' => $redirect]);
     }
 
     /**
@@ -170,22 +163,30 @@ class AnggotaController extends Controller
         if (! $user) {
             return redirect()->route('login');
         }
-        // Minimal validation to avoid failing on unexpected inputs
+        // Require full details for self-service creation. Accept formatted phone input and
+        // sanitize it before saving (allow spaces, +, dashes in input).
         $request->validate([
             'nama' => 'required|string|max:255',
-            'alamat' => 'nullable|string',
-            'nomor' => 'nullable|numeric',
+            'alamat' => 'required|string|max:500',
+            'nomor' => 'required|string|min:6|max:40',
         ]);
 
         try {
             // Use updateOrCreate to be resilient: if an anggota already exists for this user, update it;
             // otherwise create a new record. This avoids duplicate-key errors and makes the flow "auto-berhasil".
+            // sanitize phone: keep digits only
+            $raw = $request->input('nomor');
+            $digits = preg_replace('/\D+/', '', (string) $raw);
+            if (empty($digits)) {
+                return redirect()->back()->withErrors(['nomor' => 'Nomor telepon tidak valid'])->withInput();
+            }
+
             $anggota = Anggota::updateOrCreate(
                 ['user_id' => $user->id],
                 [
                     'nama' => $request->input('nama'),
                     'alamat' => $request->input('alamat') ?: '-',
-                    'nomor' => $request->input('nomor') ? (int)$request->input('nomor') : rand(1000, 9999),
+                    'nomor' => (int) $digits,
                 ]
             );
         } catch (\Exception $e) {

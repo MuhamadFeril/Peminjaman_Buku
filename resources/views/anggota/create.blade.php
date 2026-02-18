@@ -7,9 +7,21 @@
             <div class="col-12 col-md-8 col-lg-6">
                 <h3 class="mb-3">Tambah Anggota</h3>
 
+                @if($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 @php
                     $current = request()->route() ? request()->route()->getName() : null;
-                    $formAction = $current === 'anggota.createSelfForm' ? route('anggota.storeSelf') : route('anggota.store');
+                    $isSelf = $current === 'anggota.createSelfForm';
+                    $formAction = $isSelf ? route('anggota.storeSelf') : route('anggota.store');
+                    $user = auth()->user();
                 @endphp
 
                 <form action="{{ $formAction }}" method="POST">
@@ -17,17 +29,20 @@
 
                     <div class="mb-3">
                         <label class="form-label">Nama</label>
-                        <input type="text" name="nama" class="form-control" value="{{ old('nama') }}" required>
+                        <input type="text" name="nama" class="form-control" value="{{ old('nama', isset($anggota) ? $anggota->nama : ($isSelf && $user ? $user->name : '')) }}" required>
+                        <small class="text-muted">Otomatis dari user yang login (boleh disunting)</small>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Alamat</label>
-                        <input type="text" name="alamat" class="form-control" value="{{ old('alamat') }}">
+                        <input type="text" name="alamat" class="form-control" value="{{ old('alamat', isset($anggota) ? $anggota->alamat : '') }}" {{ $isSelf ? 'required' : '' }}>
+                        @error('alamat') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Telepon</label>
-                        <input type="text" name="telepon" class="form-control" value="{{ old('telepon') }}">
+                        <input type="text" name="nomor" class="form-control" value="{{ old('nomor', isset($anggota) ? $anggota->nomor : '') }}" {{ $isSelf ? 'required' : '' }}>
+                        @error('nomor') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
 
                     <button type="submit" class="btn btn-primary">Simpan Anggota</button>

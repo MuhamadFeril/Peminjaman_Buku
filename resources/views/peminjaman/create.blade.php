@@ -21,19 +21,27 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <!-- Hidden form to create Anggota for authenticated users (avoids nested forms) -->
-    <form id="createAnggotaForm" method="POST" action="{{ url('anggota/create-self') }}" style="display:none">
-        @csrf
-    </form>
-
     <form action="{{ route('peminjaman.store') }}" method="POST">
         @csrf
         <div class="mb-3">
             <label class="form-label">Anggota</label>
-            @php $anggota = auth()->check() ? auth()->user()->anggota ?? null : null; @endphp
-            @if($anggota)
+            @php
+                $anggota = auth()->check() ? auth()->user()->anggota ?? null : null;
+                $anggotaComplete = false;
+                if ($anggota) {
+                    $anggotaComplete = !empty($anggota->alamat) && !empty($anggota->nomor) && $anggota->nomor != 0;
+                }
+            @endphp
+
+            @if($anggota && $anggotaComplete)
                 <input type="text" class="form-control" value="{{ $anggota->nama }}" disabled>
-                <small class="text-muted">Otomatis dari user yang login</small>
+                <small class="text-muted">Otomatis dari kartu anggota Anda</small>
+            @elseif($anggota && ! $anggotaComplete)
+                <input type="text" class="form-control" value="{{ $anggota->nama }}" disabled>
+                <small class="text-warning">Kartu anggota belum lengkap — lengkapi alamat & telepon terlebih dahulu.</small>
+                <div class="mt-2">
+                    <a href="{{ url('anggota/create-self-form') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="btn btn-sm btn-outline-primary">Lengkapi Kartu Anggota</a>
+                </div>
             @else
                 <input type="text" class="form-control" value="Anggota tidak ditemukan" disabled>
                 <small class="text-muted">Anda harus memiliki kartu anggota sebelum meminjam.</small>
@@ -72,11 +80,11 @@
             @error('tanggal_kembali') <span class="text-danger small">{{ $message }}</span> @enderror
         </div>
 
-        @if($anggota)
+        @if($anggota && $anggotaComplete)
             <button type="submit" class="btn btn-primary shadow-sm">Simpan Peminjaman</button>
         @else
-            <button type="button" class="btn btn-primary shadow-sm" disabled title="Buat kartu anggota terlebih dahulu">Simpan Peminjaman</button>
-            <div class="mt-2 small text-muted">Anda belum memiliki kartu anggota — klik "Buat Kartu Anggota" terlebih dahulu.</div>
+            <button type="button" class="btn btn-primary shadow-sm" disabled title="Buat atau lengkapi kartu anggota terlebih dahulu">Simpan Peminjaman</button>
+            <div class="mt-2 small text-muted">Anda belum memiliki kartu anggota lengkap — klik "Buat Kartu Anggota" atau "Lengkapi Kartu Anggota" terlebih dahulu.</div>
         @endif
     </form>
     </div>

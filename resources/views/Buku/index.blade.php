@@ -14,47 +14,47 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <div class="table-responsive table-card shadow-sm bg-white rounded d-none d-md-block">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width:90px">Cover</th>
-                    <th style="width:80px">#</th>
-                    <th>Judul</th>
-                    <th>Penulis</th>
-                    <th>Tahun</th>
-                    <th>Persediaan</th>
-                    <th style="width:220px">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($bukus as $index => $buku)
-                    <tr>
-                        <td data-label="Cover">
-                            @if(!empty($buku->cover_buku))
-                                <img src="{{ asset('storage/' . $buku->cover_buku) }}" alt="{{ $buku->judul }}" class="book-thumbnail rounded">
-                            @else
-                                <div class="book-thumbnail placeholder rounded d-flex align-items-center justify-content-center">No Image</div>
-                            @endif
-                        </td>
-                        <td data-label="#">{{ ($bukus->currentPage()-1) * $bukus->perPage() + $index + 1 }}</td>
-                        <td data-label="Judul">{{ $buku->judul }}</td>
-                        <td data-label="Penulis">{{ $buku->penulis ?? '-' }}</td>
-                        <td data-label="Tahun">{{ $buku->tahun_terbit ?? '-' }}</td>
-                        <td data-label="Persediaan">{{ $buku->persediaan }}</td>
-                        <td>
-                            <a href="{{ route('buku.show', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-outline-primary me-1">Lihat</a>
-                            <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-secondary me-1">Edit</a>
-                            <form action="{{ route('buku.destroy', $buku->uuid ?? $buku->id_buku) }}" method="POST" style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus buku?')">Hapus</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+    <!-- Card grid (desktop & mobile) -->
+    <div class="d-block mt-3">
+        <div class="row g-4">
+            @foreach($bukus as $index => $buku)
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm book-card">
+                        <div class="row g-0 h-100">
+                            <div class="col-4 p-3 d-flex align-items-center justify-content-center">
+                                @if(!empty($buku->cover_buku))
+                                    <img src="{{ asset('storage/' . $buku->cover_buku) }}" alt="{{ $buku->judul }}" class="img-fluid rounded" style="max-height:140px; object-fit:cover">
+                                @else
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:140px; width:100%">No Image</div>
+                                @endif
+                            </div>
+                            <div class="col-8">
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title mb-1">{{ $buku->judul }}</h5>
+                                    <p class="mb-1 small text-muted">{{ $buku->penulis ?? '-' }} • {{ $buku->tahun_terbit ?? '-' }}</p>
+                                    <p class="mb-2"><span class="badge bg-info">{{ $buku->persediaan }}</span></p>
+                                    <div class="mt-auto d-flex gap-2">
+                                        <a href="{{ route('buku.show', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+                                        @if(auth()->check() && auth()->user()->role === 'admin')
+                                            <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-secondary">Edit</a>
+                                        @endif
+                                        @if(auth()->check())
+                                            @if($buku->persediaan > 0)
+                                                <a href="{{ route('peminjaman.create', ['buku' => $buku->uuid ?? $buku->id_buku]) }}" class="btn btn-sm btn-primary ms-auto">Pinjam</a>
+                                            @else
+                                                <button class="btn btn-sm btn-secondary ms-auto" disabled>Habis</button>
+                                            @endif
+                                        @else
+                                            <a href="{{ route('register') }}" class="btn btn-sm btn-outline-primary ms-auto">Daftar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
     </div>
 
     <!-- Mobile card list -->
