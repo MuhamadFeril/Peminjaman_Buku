@@ -2,6 +2,7 @@
 
 @section('content')
 <div class="container">
+    <div class="mobile-form">
     <div class="d-flex justify-content-between mb-3">
         <h3>Tambah Peminjaman</h3>
         <a href="{{ route('peminjaman.index') }}" class="btn btn-sm btn-outline-secondary">Kembali</a>
@@ -21,7 +22,7 @@
     @endif
 
     <!-- Hidden form to create Anggota for authenticated users (avoids nested forms) -->
-    <form id="createAnggotaForm" method="POST" action="{{ route('anggota.createSelf') }}" style="display:none">
+    <form id="createAnggotaForm" method="POST" action="{{ url('anggota/create-self') }}" style="display:none">
         @csrf
     </form>
 
@@ -38,7 +39,7 @@
                 <small class="text-muted">Anda harus memiliki kartu anggota sebelum meminjam.</small>
                 @auth
                     <div class="mt-2">
-                        <a href="{{ route('anggota.createSelfForm') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="btn btn-sm btn-outline-primary">Buat Kartu Anggota</a>
+                        <a href="{{ url('anggota/create-self-form') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="btn btn-sm btn-outline-primary">Buat Kartu Anggota</a>
                     </div>
                 @else
                     <div class="mt-2">
@@ -78,6 +79,7 @@
             <div class="mt-2 small text-muted">Anda belum memiliki kartu anggota — klik "Buat Kartu Anggota" terlebih dahulu.</div>
         @endif
     </form>
+    </div>
 </div>
 
 <style>

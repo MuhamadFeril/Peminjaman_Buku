@@ -21,10 +21,10 @@
             <tbody>
                 @foreach($anggotas as $i => $anggota)
                     <tr>
-                        <td>{{ ($anggotas->currentPage()-1) * $anggotas->perPage() + $i + 1 }}</td>
-                        <td>{{ $anggota->nama }}</td>
-                        <td>{{ $anggota->alamat }}</td>
-                        <td>{{ $anggota->nomor }}</td>
+                        <td data-label="#">{{ ($anggotas->currentPage()-1) * $anggotas->perPage() + $i + 1 }}</td>
+                        <td data-label="Nama">{{ $anggota->nama }}</td>
+                        <td data-label="Alamat">{{ $anggota->alamat }}</td>
+                        <td data-label="Telepon">{{ $anggota->nomor }}</td>
                         <td>
                             <a href="{{ route('anggota.edit', $anggota->uuid ?? $anggota->id_anggota) }}" class="btn btn-sm btn-secondary me-1">Edit</a>
                             <form action="{{ route('anggota.destroy', $anggota->uuid ?? $anggota->id_anggota) }}" method="POST" style="display:inline">

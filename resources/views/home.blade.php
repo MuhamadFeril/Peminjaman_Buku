@@ -15,7 +15,7 @@
     <div class="glass animate__animated animate__fadeIn max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
         
         <div class="md:w-1/2 bg-blue-600 p-12 text-white flex flex-col justify-center items-center text-center">
-            <h1 class="text-5xl font-extrabold mb-4 animate__animated animate__fadeInLeft">Perpus.</h1>
+            <h1 class="text-5xl font-extrabold mb-4 animate__animated animate__fadeInLeft">Perpustakaan Smk 11 Malang</h1>
             <p class="text-blue-100 opacity-80 italic animate__animated animate__fadeInUp animate__delay-1s">"Jendela dunia dalam satu genggaman digital."</p>
         </div>
 
@@ -27,8 +27,8 @@
 
             <h2 class="text-3xl font-bold text-gray-800 mb-4 animate__animated animate__fadeInRight">Selamat Datang</h2>
             <p class="text-gray-600 leading-relaxed mb-8 animate__animated animate__fadeInUp">
-                Kelola koleksi buku, pantau peminjaman, dan akses fitur **Recycle Bin** untuk keamanan data Anda.
-            </p>
+            Kami hadir untuk memudahkan akses ke dunia literasi. Jelajahi koleksi buku kami, pinjam dengan mudah, dan nikmati pengalaman membaca yang menyenangkan. Bergabunglah dengan komunitas pembaca kami dan temukan inspirasi di setiap halaman dan menjamin keamanan datamu!    
+        </p>
 
             <div class="grid grid-cols-2 gap-4 animate__animated animate__fadeInUp animate__delay-1s">
                 <a href="/buku" class="group p-4 border-2 border-blue-50 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition duration-300">

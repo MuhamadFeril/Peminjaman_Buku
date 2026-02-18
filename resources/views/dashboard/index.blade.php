@@ -7,12 +7,12 @@
                 {{ __('Dashboard Peminjaman') }}
             </h2>
 
-            <div class="flex gap-3">
-                <a href="{{ route('peminjaman.index') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-500 shadow-sm transition-all active:scale-95">
+            <div class="flex gap-3 flex-wrap items-center">
+                <a href="{{ route('peminjaman.index') }}" class="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-500 shadow-sm transition-all active:scale-95">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Peminjaman
                 </a>
-                <a href="{{ route('buku.index') }}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-500 shadow-sm transition-all active:scale-95">
+                <a href="{{ route('buku.index') }}" class="inline-flex items-center px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-500 shadow-sm transition-all active:scale-95">
                     Daftar Buku
                 </a>
             </div>

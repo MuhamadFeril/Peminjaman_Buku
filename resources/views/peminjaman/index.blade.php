@@ -22,11 +22,11 @@
             <tbody>
                 @foreach($peminjamans as $i => $peminjaman)
                     <tr>
-                        <td>{{ ($peminjamans->currentPage()-1) * $peminjamans->perPage() + $i + 1 }}</td>
-                        <td>{{ $peminjaman->Anggota->nama ?? '-' }}</td>
-                        <td>{{ $peminjaman->Buku->judul ?? '-' }}</td>
-                        <td>{{ $peminjaman->tanggal_pinjam ? \Carbon\Carbon::parse($peminjaman->tanggal_pinjam)->format('d M Y') : '-' }}</td>
-                        <td>{{ $peminjaman->tanggal_kembali ? \Carbon\Carbon::parse($peminjaman->tanggal_kembali)->format('d M Y') : '-' }}</td>
+                        <td data-label="#">{{ ($peminjamans->currentPage()-1) * $peminjamans->perPage() + $i + 1 }}</td>
+                        <td data-label="Anggota">{{ $peminjaman->Anggota->nama ?? '-' }}</td>
+                        <td data-label="Buku">{{ $peminjaman->Buku->judul ?? '-' }}</td>
+                        <td data-label="Tanggal Pinjam">{{ $peminjaman->tanggal_pinjam ? \Carbon\Carbon::parse($peminjaman->tanggal_pinjam)->format('d M Y') : '-' }}</td>
+                        <td data-label="Tanggal Kembali">{{ $peminjaman->tanggal_kembali ? \Carbon\Carbon::parse($peminjaman->tanggal_kembali)->format('d M Y') : '-' }}</td>
                         <td>
                             <a href="{{ route('peminjaman.edit', $peminjaman->uuid ?? $peminjaman->id_peminjaman) }}" class="btn btn-sm btn-secondary me-1">Edit</a>
                             <form action="{{ route('peminjaman.destroy', $peminjaman->uuid ?? $peminjaman->id_peminjaman) }}" method="POST" style="display:inline">

@@ -50,4 +50,12 @@ class User extends Authenticatable
             }
         });
     }
+
+    /**
+     * Relation: a User may have one Anggota (member card).
+     */
+    public function anggota()
+    {
+        return $this->hasOne(Anggota::class, 'user_id', 'id');
+    }
 }

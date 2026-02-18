@@ -52,6 +52,60 @@
             border-color: #6ea8fe;
         }
 
+        /* Mobile tweaks */
+        @media (max-width: 576px) {
+            main.container { padding: 1.2rem; font-size:1.05rem; }
+            .navbar .navbar-brand { font-size: 1.15rem; }
+            .mobile-form { padding: 0.9rem; background: #fff; border-radius: 14px; box-shadow: 0 8px 22px rgba(16,24,40,0.06); }
+            .mobile-form .form-control { padding: 14px 16px; font-size: 1.05rem; border-radius:8px; }
+            .mobile-form .form-label { font-size: 1.03rem; font-weight:600; }
+            .mobile-form .btn { width: 100%; padding: 14px 16px; font-size: 1.05rem; border-radius:12px; }
+            .mobile-form .small { font-size: 0.9rem; }
+            .table-responsive { font-size: 1rem; }
+            .navbar-nav .nav-link { padding-left: .6rem; padding-right: .6rem; font-size:1rem }
+            /* Increase tap targets for nav toggler */
+            .navbar-toggler { padding: .5rem .75rem; border-radius:10px }
+        }
+
+        /* Enhanced mobile layout for small devices: convert tables into stacked cards for readability */
+        @media (max-width: 768px) {
+            /* Make container padding tighter on small screens */
+            main.container { padding-left: 0.8rem; padding-right: 0.8rem; font-size:1.02rem }
+
+            /* Dashboard / metric cards — full-width and larger spacing */
+            .dashboard-card, .metric-card {
+                width: 100%;
+                padding: 14px 16px;
+                margin-bottom: 12px;
+                border-radius: 12px;
+                box-shadow: 0 8px 20px rgba(16,24,40,0.04);
+                background: #fff;
+            }
+
+            /* Make action buttons touch-friendly and larger */
+            .btn { padding: 12px 16px; font-size: 1.05rem; border-radius: 12px; }
+
+            /* Improve table readability by converting rows to card blocks */
+            table.table { border-collapse: separate; }
+            table.table thead { display: none; }
+            table.table tbody { display: block; }
+            table.table tbody tr { display: block; margin-bottom: 10px; background: #fff; border-radius: 10px; box-shadow: 0 6px 18px rgba(15,23,42,.04); padding: 10px; }
+            table.table td { display: block; padding: 8px 10px; border: none; font-size:1rem }
+            table.table td:before { content: attr(data-label); font-weight:600; display:inline-block; width:140px; color:#6b7280; }
+
+            /* Make small images responsive inside cards */
+            .book-thumbnail, .img-fluid { width: 100%; height: auto; object-fit:cover; border-radius:8px; }
+
+            /* Make pagination centered and easier to tap */
+            .pagination { justify-content: center; }
+
+            /* Slightly larger badges and small visual elements */
+            .badge { font-size: 0.95rem; padding: .45em .6em; }
+
+            /* Hide non-essential large side paddings */
+            .table-responsive { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
+
         /* Alert auto-dismiss helper */
         .alert-fade-out { transition: opacity .4s ease, transform .4s ease; }
         .alert-hidden { opacity: 0; transform: translateY(-8px); }

@@ -1,114 +1,70 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController; // Authentication
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuthController;
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
 
+// Halaman Utama
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->route('dashboard.index');
-    }
-    return view('home');
+    return auth()->check() ? redirect()->route('dashboard.index') : view('home');
 });
 
-// Local debug route to inspect incoming cookies/headers/session
-if (app()->environment('local')) {
-    Route::get('debug/cookies', function (Request $request) {
-        return response()->json([
-            'cookies' => $request->cookies->all(),
-            'headers' => [
-                'cookie' => $request->header('cookie'),
-                'x-xsrf-token' => $request->header('x-xsrf-token'),
-                'referer' => $request->header('referer'),
-            ],
-            'session_has_token' => session()->has('_token'),
-            'session_id' => session()->getId(),
-        ]);
-    });
-}
-
-
-
-// Authentication routes (always reachable)
+// Authentication
 Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('login', [AuthController::class, 'login']);
 Route::get('register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('register', [AuthController::class, 'register']);
-
-// Logout (POST) should be available to authenticated users
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('logout', [AuthController::class, 'logout'])->name('logout.get'); // Shortcut biar gak pusing
 
-// Public viewing routes (GET) - available to all devices/users
+// Public Routes (Bisa dilihat tanpa login)
 Route::get('buku', [BukuController::class, 'index'])->name('buku.index');
-Route::get('peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
-// Route 'peminjaman/{id}' moved below protected routes to avoid capturing 'create' etc.
-
-// Protected routes: creation/modification require auth + permissions
-Route::middleware('auth')->group(function () {
-    // Buku management (admin)
-    Route::get('buku/create', [BukuController::class, 'create'])->middleware('web_permission:buku.manage')->name('buku.create');
-    Route::post('buku', [BukuController::class, 'store'])->middleware('web_permission:buku.manage')->name('buku.store');
-    Route::get('buku/{id_buku}/edit', [BukuController::class, 'edit'])->middleware('web_permission:buku.manage')->name('buku.edit');
-    Route::put('buku/{id_buku}', [BukuController::class, 'update'])->middleware('web_permission:buku.manage')->name('buku.update');
-    Route::delete('buku/{id_buku}', [BukuController::class, 'destroy'])->middleware('web_permission:buku.manage')->name('buku.destroy');
-
-    // Anggota routes - hanya admin bisa akses
-    Route::middleware('web_permission:anggota.manage')->group(function () {
-        Route::resource('anggota', AnggotaController::class);
-    });
-
-    // Peminjaman management
-    // Allow authenticated users to view the 'create' form so they can create an anggota card
-    // (actual storing of peminjaman remains protected by permission middleware)
-    Route::get('peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
-    Route::post('peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
-    Route::get('peminjaman/{id_peminjaman}/edit', [PeminjamanController::class, 'edit'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.edit');
-    Route::put('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'update'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.update');
-    Route::delete('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'destroy'])->middleware('web_permission:peminjaman.manage')->name('peminjaman.destroy');
-
-    // Conveniene GET logout route (not recommended for production CSRF reasons)
-    Route::get('logout', function () {
-        auth()->logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-        return redirect('/');
-    })->name('logout.get');
-
-    // Dashboard - single route
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-
-    // Profile routes
-    Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
-    Route::get('profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
-
-    // Allow authenticated users to create their own Anggota card if missing
-    Route::post('anggota/create-self', [\App\Http\Controllers\AnggotaController::class, 'createSelf'])->name('anggota.createSelf');
-    // Self-service create form (GET) and store (POST) for non-admin users
-    Route::get('anggota/create-self-form', [\App\Http\Controllers\AnggotaController::class, 'createSelfForm'])->name('anggota.createSelfForm');
-    Route::post('anggota/store-self', [\App\Http\Controllers\AnggotaController::class, 'storeSelf'])->name('anggota.storeSelf');
-});
-
-// Public single-book route moved below to avoid catching 'create' and other specific paths
 Route::get('buku/{id_buku}', [BukuController::class, 'show'])->name('buku.show');
 
-// Public peminjaman show route (placed after protected routes)
-Route::get('peminjaman/{id_peminjaman}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
+// Protected Routes (Harus Login)
+Route::middleware('auth')->group(function () {
+    
+    // Dashboard & Profile
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
 
-// Guest borrow request (UI -> saves to session for admin review)
-Route::post('peminjaman/guest-request', [PeminjamanController::class, 'guestRequest'])->name('peminjaman.guestRequest');
+    // ANGGOTA (Pusat Perbaikan)
+    // 1. Jalur Admin (Hanya Admin)
+    Route::middleware('web_permission:anggota.manage')->group(function () {
+        Route::get('anggota', [AnggotaController::class, 'index'])->name('anggota.index');
+        Route::get('anggota/{id}/edit', [AnggotaController::class, 'edit'])->name('anggota.edit');
+        Route::put('anggota/{id}', [AnggotaController::class, 'update'])->name('anggota.update');
+        Route::delete('anggota/{id}', [AnggotaController::class, 'destroy'])->name('anggota.destroy');
+    });
+    // 2. Jalur User Biasa (Buat Kartu Sendiri) - INI BIAR GAK 404
+    Route::get('anggota/create', [AnggotaController::class, 'create'])->name('anggota.create');
+    Route::post('anggota', [AnggotaController::class, 'store'])->name('anggota.store');
+    Route::get('anggota/create-self-form', [AnggotaController::class, 'createSelfForm'])->name('anggota.createSelfForm');
+    Route::post('anggota/store-self', [AnggotaController::class, 'storeSelf'])->name('anggota.storeSelf');
+
+    // BUKU (Admin Only)
+    Route::middleware('web_permission:buku.manage')->group(function () {
+        Route::get('buku/create', [BukuController::class, 'create'])->name('buku.create');
+        Route::post('buku/store', [BukuController::class, 'store'])->name('buku.store');
+        Route::get('buku/{id_buku}/edit', [BukuController::class, 'edit'])->name('buku.edit');
+        Route::put('buku/{id_buku}', [BukuController::class, 'update'])->name('buku.update');
+        Route::delete('buku/{id_buku}', [BukuController::class, 'destroy'])->name('buku.destroy');
+    });
+
+    // PEMINJAMAN
+    Route::get('peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
+    Route::post('peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
+    Route::get('peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
+    Route::get('peminjaman/{id}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
+    // Admin-only management routes for peminjaman (edit/update/delete)
+    Route::middleware('web_permission:peminjaman.manage')->group(function () {
+        Route::get('peminjaman/{id}/edit', [PeminjamanController::class, 'edit'])->name('peminjaman.edit');
+        Route::put('peminjaman/{id}', [PeminjamanController::class, 'update'])->name('peminjaman.update');
+        Route::delete('peminjaman/{id}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
+    });
+});

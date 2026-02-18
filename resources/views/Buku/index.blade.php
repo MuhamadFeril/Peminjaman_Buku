@@ -5,7 +5,9 @@
 <div class="container">
         <div class="d-flex justify-content-between mb-4">
         <h3>Daftar Buku</h3>
-        <a href="{{ route('buku.create') }}" class="btn btn-primary">Tambah Buku</a>
+        @if(Route::has('buku.create') && auth()->check() && auth()->user()->role === 'admin')
+            <a href="{{ route('buku.create') }}" class="btn btn-primary">Tambah Buku</a>
+        @endif
     </div>
 
     @if(session('success'))
@@ -28,18 +30,18 @@
             <tbody>
                 @foreach($bukus as $index => $buku)
                     <tr>
-                        <td>
+                        <td data-label="Cover">
                             @if(!empty($buku->cover_buku))
                                 <img src="{{ asset('storage/' . $buku->cover_buku) }}" alt="{{ $buku->judul }}" class="book-thumbnail rounded">
                             @else
                                 <div class="book-thumbnail placeholder rounded d-flex align-items-center justify-content-center">No Image</div>
                             @endif
                         </td>
-                        <td>{{ ($bukus->currentPage()-1) * $bukus->perPage() + $index + 1 }}</td>
-                        <td>{{ $buku->judul }}</td>
-                        <td>{{ $buku->penulis ?? '-' }}</td>
-                        <td>{{ $buku->tahun_terbit ?? '-' }}</td>
-                        <td>{{ $buku->persediaan }}</td>
+                        <td data-label="#">{{ ($bukus->currentPage()-1) * $bukus->perPage() + $index + 1 }}</td>
+                        <td data-label="Judul">{{ $buku->judul }}</td>
+                        <td data-label="Penulis">{{ $buku->penulis ?? '-' }}</td>
+                        <td data-label="Tahun">{{ $buku->tahun_terbit ?? '-' }}</td>
+                        <td data-label="Persediaan">{{ $buku->persediaan }}</td>
                         <td>
                             <a href="{{ route('buku.show', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-outline-primary me-1">Lihat</a>
                             <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-secondary me-1">Edit</a>

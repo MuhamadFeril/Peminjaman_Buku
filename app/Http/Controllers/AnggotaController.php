@@ -39,6 +39,8 @@ class AnggotaController extends Controller
             // accept either 'nomor' or 'telepon' from form
             'nomor' => 'nullable|numeric',
             'telepon' => 'nullable|string|max:50',
+            // admin may assign anggota to a user
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         // map telepon -> nomor if nomor not provided
@@ -49,13 +51,38 @@ class AnggotaController extends Controller
         // Ensure nomor has a value for DB (integer column)
         $data['nomor'] = isset($data['nomor']) ? (int) $data['nomor'] : 0;
 
-        Anggota::create([
+        $current = $request->user();
+
+        // Determine user association: only admins may set arbitrary user_id.
+        if (! empty($data['user_id']) && $current && isset($current->role) && $current->role === 'admin') {
+            $userId = $data['user_id'];
+        } else {
+            $userId = $current ? $current->id : null;
+        }
+
+        if ($userId) {
+            $exists = Anggota::where('user_id', $userId)->first();
+            if ($exists) {
+                // If admin was creating for another user, redirect to anggota index with message
+                if ($current && isset($current->role) && $current->role === 'admin') {
+                    return redirect()->route('anggota.index')->with('success', 'Kartu anggota untuk user tersebut sudah ada.');
+                }
+                return redirect()->route('peminjaman.create')->with('success', 'Kartu anggota sudah ada.');
+            }
+        }
+
+        $anggota = Anggota::create([
             'nama' => $data['nama'],
             'alamat' => $data['alamat'] ?? '',
             'nomor' => $data['nomor'],
+            'user_id' => $userId,
         ]);
 
-        return redirect()->route('anggota.index')->with('success','Anggota berhasil ditambahkan.');
+        if ($current && isset($current->role) && $current->role === 'admin') {
+            return redirect()->route('anggota.index')->with('success','Anggota berhasil ditambahkan.');
+        }
+
+        return redirect()->route('peminjaman.create')->with('success','Kartu anggota berhasil dibuat.');
     }
     public function show($id)
     {
@@ -138,33 +165,31 @@ class AnggotaController extends Controller
      */
     public function storeSelf(Request $request)
     {
+        
         $user = $request->user();
         if (! $user) {
             return redirect()->route('login');
         }
-
-        $data = $request->validate([
+        // Minimal validation to avoid failing on unexpected inputs
+        $request->validate([
             'nama' => 'required|string|max:255',
             'alamat' => 'nullable|string',
-            'telepon' => 'nullable|string|max:50',
             'nomor' => 'nullable|numeric',
         ]);
 
-        if (empty($data['nomor']) && ! empty($data['telepon'])) {
-            $data['nomor'] = preg_replace('/[^0-9]/', '', $data['telepon']);
-        }
-
-        $data['nomor'] = isset($data['nomor']) ? (int) $data['nomor'] : 0;
-
         try {
-            $anggota = Anggota::create([
-                'nama' => $data['nama'],
-                'alamat' => $data['alamat'] ?? '',
-                'nomor' => $data['nomor'],
-                'user_id' => $user->id,
-            ]);
+            // Use updateOrCreate to be resilient: if an anggota already exists for this user, update it;
+            // otherwise create a new record. This avoids duplicate-key errors and makes the flow "auto-berhasil".
+            $anggota = Anggota::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nama' => $request->input('nama'),
+                    'alamat' => $request->input('alamat') ?: '-',
+                    'nomor' => $request->input('nomor') ? (int)$request->input('nomor') : rand(1000, 9999),
+                ]
+            );
         } catch (\Exception $e) {
-            \Log::error('Failed creating Anggota self for user '.$user->id.': '.$e->getMessage());
+            Log::error('Failed creating/updating Anggota self for user '.$user->id.': '.$e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Gagal membuat kartu anggota: ' . $e->getMessage()]);
         }
 
