@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name', 'Laravel'))</title>
+    <title>@yield('title', config('app.name', 'Perpusku'))</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         /* Improve default text contrast across the app */
@@ -114,7 +114,16 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{{ url('/') }}">{{ config('app.name', 'App') }}</a>
+            <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}" style="gap:10px">
+                <span class="logo-icon d-inline-block" style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;background:#2b6cb0;border-radius:8px;box-shadow:0 6px 14px rgba(43,108,176,0.12)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6v12a1 1 0 0 0 1 1h12"/>
+                        <path d="M21 6v12a1 1 0 0 1-1 1H9"/>
+                        <path d="M7 6V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </span>
+                <span class="ms-2" style="font-weight:600">{{ config('app.name', 'Perpusku') }}</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -143,7 +152,7 @@
                                 <span>{{ auth()->user()->name }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                                @if (\Illuminate\Support\Facades\Route::has('profile.show'))
+                                @if (Route::has('profile.show'))
                                     <li><a class="dropdown-item" href="{{ route('profile.show') }}">Profil Saya</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                 @endif
@@ -155,6 +164,7 @@
                                 </li>
                             </ul>
                         </li>
+                        <!-- standalone logout buttons removed; logout remains inside dropdown -->
                     @endguest
                 </ul>
         </div>
@@ -191,5 +201,69 @@
             }, 3000);
         });
     </script>
+        <!-- Global loader -->
+        <div id="global-loader" class="d-none" aria-hidden="true">
+            <div class="loader-backdrop"></div>
+            <div class="loader-content" role="status" aria-live="polite">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+            </div>
+        </div>
+        <style>
+            #global-loader { position: fixed; inset: 0; z-index: 2200; display:flex; align-items:center; justify-content:center; }
+            #global-loader .loader-backdrop { position:absolute; inset:0; background: rgba(0,0,0,0.36); }
+            #global-loader .loader-content { position:relative; z-index:2201; }
+            #global-loader.d-none { display:none; }
+            @media (prefers-reduced-motion: reduce) {
+                #global-loader .spinner-border { animation: none !important; }
+            }
+        </style>
+        <script>
+            (function(){
+                const loader = document.getElementById('global-loader');
+                function showLoader(){ if(!loader) return; loader.classList.remove('d-none'); loader.setAttribute('aria-hidden','false'); }
+                function hideLoader(){ if(!loader) return; loader.classList.add('d-none'); loader.setAttribute('aria-hidden','true'); }
+
+                // Hide loader on initial load
+                window.addEventListener('load', hideLoader);
+                window.addEventListener('pageshow', function(e){ if(e.persisted) hideLoader(); });
+
+                // Show loader for internal navigation links
+                document.addEventListener('click', function(ev){
+                    const a = ev.target.closest && ev.target.closest('a');
+                    if(!a || !a.href) return;
+                    // ignore anchors, external links, mailto, tel, downloads, or links opening new tab
+                    const href = a.getAttribute('href') || '';
+                    if(href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+                    try{
+                        const url = new URL(a.href, location.href);
+                        if(url.origin !== location.origin) return; // external
+                    }catch(e){ return; }
+                    if(a.target && a.target !== '' && a.target !== '_self') return;
+                    if(a.hasAttribute('data-no-loader')) return;
+                    showLoader();
+                }, true);
+
+                // Show loader on form submit
+                document.addEventListener('submit', function(ev){
+                    const form = ev.target;
+                    if(form && form.closest) {
+                        if(form.hasAttribute('data-no-loader')) return;
+                        showLoader();
+                    }
+                }, true);
+
+                // Wrap fetch to show loader during requests
+                if(window.fetch){
+                    const rawFetch = window.fetch.bind(window);
+                    window.fetch = function(){
+                        showLoader();
+                        return rawFetch.apply(this, arguments).finally(function(){ hideLoader(); });
+                    };
+                }
+
+                // Expose for debugging if needed
+                window.__globalLoader = { show: showLoader, hide: hideLoader };
+            })();
+        </script>
 </body>
 </html>

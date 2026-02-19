@@ -3,19 +3,25 @@
 @section('content')
 @php use Illuminate\Support\Str; @endphp
 <div class="container">
-        <div class="d-flex justify-content-between mb-4">
-        <h3>Daftar Buku</h3>
-        @if(Route::has('buku.create') && auth()->check() && auth()->user()->role === 'admin')
-            <a href="{{ route('buku.create') }}" class="btn btn-primary">Tambah Buku</a>
-        @endif
+        <div class="d-flex justify-content-between mb-4 align-items-center">
+        <h3 class="mb-0">Daftar Buku</h3>
+        <div class="d-flex align-items-center gap-2">
+            <form action="{{ route('buku.index') }}" method="get" class="d-flex">
+                <input type="search" name="q" value="{{ isset($q) ? $q : request('q') }}" class="form-control form-control-sm me-2" placeholder="Cari judul, penulis, atau tahun" aria-label="Search">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Cari</button>
+            </form>
+            @if(Route::has('buku.create') && auth()->check() && auth()->user()->role === 'admin')
+                <a href="{{ route('buku.create') }}" class="btn btn-primary">Tambah Buku</a>
+            @endif
+        </div>
     </div>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <!-- Card grid (desktop & mobile) -->
-    <div class="d-block mt-3">
+    <!-- Card grid (desktop only) -->
+    <div class="d-none d-md-block mt-3">
         <div class="row g-4">
             @foreach($bukus as $index => $buku)
                 <div class="col-12 col-md-6 col-lg-4">
@@ -57,42 +63,39 @@
         </div>
     </div>
 
-    <!-- Mobile card list -->
+    <!-- Mobile card list (consistent with desktop cards) -->
     <div class="d-block d-md-none mt-3">
         <div class="row g-2">
             @foreach($bukus as $buku)
                 <div class="col-12">
-                    <div class="card shadow-sm">
-                        <div class="row g-0 align-items-center">
-                            <div class="col-3">
+                    <div class="card shadow-sm h-100 book-card">
+                        <div class="row g-0 h-100">
+                            <div class="col-4 p-1 d-flex align-items-center justify-content-center">
                                 @if(!empty($buku->cover_buku))
-                                    <img src="{{ asset('storage/' . $buku->cover_buku) }}" class="img-fluid rounded-start" alt="{{ $buku->judul }}">
+                                    <img src="{{ asset('storage/' . $buku->cover_buku) }}" class="img-fluid rounded book-thumb" alt="{{ $buku->judul }}" style="max-height:84px; object-fit:cover">
                                 @else
-                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:72px">No Image</div>
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:84px; width:100%">No Image</div>
                                 @endif
                             </div>
-                            <div class="col-9">
-                                <div class="card-body py-2">
-                                    <h6 class="card-title mb-1">{{ 
-                                        Str::limit($buku->judul, 60) }}</h6>
+                            <div class="col-8">
+                                <div class="card-body d-flex flex-column py-1">
+                                    <h6 class="card-title mb-1">{{ Str::limit($buku->judul, 60) }}</h6>
                                     <p class="mb-1 small text-muted">{{ $buku->penulis ?? '-' }} • {{ $buku->tahun_terbit ?? '-' }}</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div><span class="badge bg-info">{{ $buku->persediaan }}</span></div>
-                                        <div>
-                                            <a href="{{ route('buku.show', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
-                                            @auth
-                                                @if($buku->persediaan > 0)
-                                                    <a href="{{ route('peminjaman.create', ['buku' => $buku->uuid ?? $buku->id_buku]) }}" class="btn btn-sm btn-primary ms-1">Pinjam</a>
-                                                @else
-                                                    <button class="btn btn-sm btn-secondary ms-1" disabled>Habis</button>
-                                                @endif
+                                    <p class="mb-2"><span class="badge bg-info small">{{ $buku->persediaan }}</span></p>
+                                    <div class="mt-auto d-flex gap-2">
+                                        <a href="{{ route('buku.show', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+                                        @if(auth()->check() && auth()->user()->role === 'admin')
+                                            <a href="{{ route('buku.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-secondary">Edit</a>
+                                        @endif
+                                        @auth
+                                            @if($buku->persediaan > 0)
+                                                <a href="{{ route('peminjaman.create', ['buku' => $buku->uuid ?? $buku->id_buku]) }}" class="btn btn-sm btn-primary ms-auto">Pinjam</a>
                                             @else
-                                                <div class="btn-group">
-                                                    <a href="{{ route('register') }}" class="btn btn-sm btn-outline-primary">Daftar</a>
-                                                    <button class="btn btn-sm btn-primary ms-1" onclick="openGuestRequest('{{ $buku->uuid ?? $buku->id_buku }}')">Ajukan</button>
-                                                </div>
-                                            @endauth
-                                        </div>
+                                                <button class="btn btn-sm btn-secondary ms-auto" disabled>Habis</button>
+                                            @endif
+                                        @else
+                                            <a href="{{ route('register') }}" class="btn btn-sm btn-outline-primary ms-auto">Daftar</a>
+                                        @endauth
                                     </div>
                                 </div>
                             </div>
@@ -132,6 +135,16 @@
     /* Make table rows appear spaced by using border-collapse separate
        and adding margin via box-shadow area (works best with white page bg) */
     .table-responsive.table-card .table{border-collapse:separate;border-spacing:0 12px}
+</style>
+<style>
+    /* Mobile-specific compact styles */
+    @media (max-width: 768px) {
+        .book-thumb { max-height:56px !important; width:auto; }
+        .book-card .card-body { padding-top: .4rem; padding-bottom: .4rem; }
+        .book-card .card-title { font-size: 0.95rem; }
+        .badge.small { font-size: 0.72rem; padding: .2rem .4rem; }
+        .btn-sm { padding: .25rem .5rem; font-size: .78rem; }
+    }
 </style>
 @include('partials.guest_request_modal')
 @endsection

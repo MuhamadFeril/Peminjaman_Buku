@@ -199,4 +199,51 @@ class AnggotaController extends Controller
         return redirect($redirect)->with('success', 'Kartu anggota berhasil dibuat.');
     }
 
+    /**
+     * Show edit form for the current user's Anggota record.
+     */
+    public function editSelf(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $anggota = Anggota::where('user_id', $user->id)->firstOrFail();
+        return view('anggota.edit', compact('anggota'));
+    }
+
+    /**
+     * Update the current user's Anggota record.
+     */
+    public function updateSelf(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $anggota = Anggota::where('user_id', $user->id)->firstOrFail();
+
+        $data = $request->validate([
+            'nama' => 'required|string|max:255',
+            'alamat' => 'nullable|string',
+            'nomor' => 'nullable|string',
+            'telepon' => 'nullable|string|max:50',
+        ]);
+
+        if (empty($data['nomor']) && ! empty($data['telepon'])) {
+            $data['nomor'] = preg_replace('/[^0-9]/', '', $data['telepon']);
+        }
+        $data['nomor'] = isset($data['nomor']) ? (int) preg_replace('/\D+/', '', (string) $data['nomor']) : $anggota->nomor ?? 0;
+
+        $anggota->update([
+            'nama' => $data['nama'],
+            'alamat' => $data['alamat'] ?? '',
+            'nomor' => $data['nomor'],
+        ]);
+
+        return redirect()->route('profile.show')->with('success','Kartu anggota berhasil diperbarui.');
+    }
+
 }   

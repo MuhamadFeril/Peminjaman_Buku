@@ -15,67 +15,90 @@
                 <a href="{{ route('buku.index') }}" class="inline-flex items-center px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-500 shadow-sm transition-all active:scale-95">
                     Daftar Buku
                 </a>
+                <form method="POST" action="{{ route('logout') }}" class="inline-flex">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center px-3 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-500 shadow-sm transition-all active:scale-95">Logout</button>
+                </form>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12 font-sans bg-gray-50/50">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6 transition-all hover:shadow-md">
-                    <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">Total Anggota</p>
-                    <p class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ $totalAnggota ?? 0 }}</p>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6 transition-all hover:shadow-md">
-                    <p class="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Buku</p>
-                    <p class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ $totalBuku ?? 0 }}</p>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6 transition-all hover:shadow-md">
-                    <p class="text-xs font-bold text-purple-500 uppercase tracking-widest mb-1">Total Peminjaman</p>
-                    <p class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ $totalPeminjaman ?? 0 }}</p>
-                </div>
-            </div>
-
-            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
-                            <span class="w-2 h-6 bg-indigo-500 rounded-full mr-3"></span>
-                            5 Peminjaman Terakhir
-                        </h3>
-                        <a href="{{ route('peminjaman.index') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-500 transition">Lihat Semua &rarr;</a>
+    <div class="py-4">
+        <div class="container-fluid">
+            <div class="row g-4">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card shadow-sm h-100 animate-item">
+                        <div class="card-body">
+                            <div class="text-uppercase text-primary small fw-bold">Profil Saya</div>
+                            <div class="h5 fw-semibold count" data-target="{{ auth()->user()->name ? 1 : 0 }}">{{ auth()->user()->name ?? '-' }}</div>
+                            <div class="text-muted small">{{ auth()->user()->email ?? '-' }}</div>
+                            <div class="mt-3">
+                                <a href="{{ route('profile.show') }}" class="btn btn-sm btn-outline-secondary">Lihat Profil</a>
+                                <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-primary ms-2">Edit</a>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="text-gray-400 text-xs uppercase tracking-wider border-b dark:border-gray-700">
-                                    <th class="pb-4 px-4 font-semibold">ID</th>
-                                    <th class="pb-4 px-4 font-semibold">Pelanggan</th>
-                                    <th class="pb-4 px-4 font-semibold text-right">Tanggal</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                @forelse($recentPeminjaman as $peminjaman)
-                                <tr class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all">
-                                    <td class="py-4 px-4 text-sm font-medium text-gray-400 group-hover:text-indigo-500 transition">#{{ $peminjaman->id }}</td>
-                                    <td class="py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $peminjaman->Anggota->nama ?? '-' }}</td>
-                                    <td class="py-4 px-4 text-sm text-gray-500 text-right">{{ optional($peminjaman->created_at)->format('d M, Y') ?? '-' }}</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="3" class="py-12 text-center">
-                                        <div class="flex flex-col items-center">
-                                            <span class="text-gray-300 dark:text-gray-600 text-sm">Belum ada peminjaman terbaru.</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card shadow-sm h-100 animate-item">
+                        <div class="card-body">
+                            <div class="text-uppercase text-info small fw-bold">Total Anggota</div>
+                            <div class="h3 fw-bold count" data-target="{{ $totalAnggota ?? 0 }}">{{ $totalAnggota ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card shadow-sm h-100 animate-item">
+                        <div class="card-body">
+                            <div class="text-uppercase text-success small fw-bold">Total Buku</div>
+                            <div class="h3 fw-bold count" data-target="{{ $totalBuku ?? 0 }}">{{ $totalBuku ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card shadow-sm h-100 animate-item">
+                        <div class="card-body">
+                            <div class="text-uppercase text-warning small fw-bold">Total Peminjaman</div>
+                            <div class="h3 fw-bold count" data-target="{{ $totalPeminjaman ?? 0 }}">{{ $totalPeminjaman ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">5 Peminjaman Terakhir</h6>
+                            <a href="{{ route('peminjaman.index') }}" class="small">Lihat Semua &rarr;</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Pelanggan</th>
+                                            <th class="text-end">Tanggal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($recentPeminjaman as $peminjaman)
+                                        <tr>
+                                            <td class="text-muted">#{{ $peminjaman->id }}</td>
+                                            <td class="fw-semibold">{{ $peminjaman->Anggota->nama ?? '-' }}</td>
+                                            <td class="text-end text-muted">{{ optional($peminjaman->created_at)->format('d M, Y') ?? '-' }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Belum ada peminjaman terbaru.</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -92,4 +115,48 @@
         }
         .container-animate { animation: slideUp 0.4s ease-out forwards; }
     </style>
+    <style>
+        /* Animation for dashboard items */
+        .animate-item { opacity: 0; transform: translateY(8px); transition: opacity .45s ease, transform .45s ease; }
+        .animate-item.in { opacity: 1; transform: translateY(0); }
+
+        .table-hover tbody tr { opacity: 0; transform: translateY(6px); transition: opacity .35s ease, transform .35s ease; }
+        .table-hover tbody tr.in { opacity: 1; transform: translateY(0); }
+
+        /* subtle hover lift */
+        .card:hover { transform: translateY(-4px); transition: transform .18s ease; }
+
+        /* counter small style */
+        .count { display:inline-block; min-width:48px; }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // animate cards with stagger
+            const items = document.querySelectorAll('.animate-item');
+            items.forEach((el, i) => setTimeout(() => el.classList.add('in'), i * 100));
+
+            // animate table rows
+            const rows = document.querySelectorAll('.table-hover tbody tr');
+            rows.forEach((r, i) => setTimeout(() => r.classList.add('in'), 300 + i * 80));
+
+            // simple counter animation for numerical elements
+            const counters = document.querySelectorAll('.count');
+            counters.forEach(c => {
+                const target = Number(c.getAttribute('data-target')) || 0;
+                if (target <= 0) return;
+                let current = 0;
+                const step = Math.max(1, Math.floor(target / 30));
+                const interval = setInterval(() => {
+                    current += step;
+                    if (current >= target) {
+                        c.textContent = target;
+                        clearInterval(interval);
+                    } else {
+                        c.textContent = current;
+                    }
+                }, 25);
+            });
+        });
+    </script>
 </x-app-layout>

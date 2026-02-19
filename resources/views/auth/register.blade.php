@@ -34,14 +34,7 @@
                                    placeholder="nama@email.com" value="{{ old('email') }}" required>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-secondary">Peran Pengguna (Role)</label>
-                            <select name="role" class="form-select form-select-lg fs-6 border-light-subtle" 
-                                    style="border-radius: 12px; background-color: #f8fafc;">
-                                <option value="user" {{ old('role', 'user') == 'user' ? 'selected' : '' }}>User (Peminjam)</option>
-                                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin (Petugas)</option>
-                            </select>
-                        </div>
+                        <!-- Role selection removed from public registration. New users are assigned 'user' role by default. -->
 
                         <div class="row">
                             <div class="col-md-6 mb-3">

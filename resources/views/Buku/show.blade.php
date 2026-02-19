@@ -60,6 +60,22 @@
                     </div>
                 </div>
             @endif
+
+            {{-- Sinopsis (Displayed to all; admin can create/edit) --}}
+            <div class="mt-4">
+                <h4>Sinopsis</h4>
+                @if($buku->sinopsis && !empty($buku->sinopsis->konten))
+                    <div class="card mb-3"><div class="card-body">{!! nl2br(e($buku->sinopsis->konten)) !!}</div></div>
+                    @if(auth()->check() && auth()->user()->role === 'admin')
+                        <a href="{{ route('buku.sinopsis.edit', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-secondary">Edit Sinopsis</a>
+                    @endif
+                @else
+                    <p class="text-muted">Belum ada sinopsis untuk buku ini.</p>
+                    @if(auth()->check() && auth()->user()->role === 'admin')
+                        <a href="{{ route('buku.sinopsis.create', $buku->uuid ?? $buku->id_buku) }}" class="btn btn-sm btn-primary">Buat Sinopsis</a>
+                    @endif
+                @endif
+            </div>
         </div>
     </div>
 </div>
