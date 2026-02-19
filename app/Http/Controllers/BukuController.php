@@ -4,16 +4,29 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Buku;
+use App\Models\Sinopsis;
 
 class BukuController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-     public function index()
+     public function index(Request $request)
      {
-         $bukus = Buku::latest()->paginate(15);
-         return view('buku.index', compact('bukus'));
+         $q = $request->input('q');
+         $query = Buku::query();
+
+         if ($q) {
+             $query->where(function($sub) use ($q) {
+                 $sub->where('judul', 'like', "%{$q}%")
+                     ->orWhere('penulis', 'like', "%{$q}%")
+                     ->orWhere('tahun_terbit', 'like', "%{$q}%");
+             });
+         }
+
+         $bukus = $query->latest()->paginate(15)->appends($request->only('q'));
+
+         return view('buku.index', compact('bukus', 'q'));
      }
 
     /**
@@ -128,5 +141,59 @@ class BukuController extends Controller
          $buku->delete();
      }
      return redirect()->route("buku.index")->with("success","buku.deleted");
+    }
+
+    /** Sinopsis: show create form */
+    public function createSinopsis(string $id_buku)
+    {
+        $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
+        return view('buku.sinopsis.create', compact('buku'));
+    }
+
+    /** Store sinopsis */
+    public function storeSinopsis(Request $request, string $id_buku)
+    {
+        $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
+
+        $data = $request->validate([
+            'konten' => 'required|string',
+        ]);
+
+        $sinopsis = Sinopsis::create([
+            'buku_id' => $buku->id_buku,
+            'konten' => $data['konten'],
+            'created_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('buku.show', $buku->uuid ?? $buku->id_buku)->with('success', 'Sinopsis berhasil dibuat.');
+    }
+
+    /** Edit sinopsis form */
+    public function editSinopsis(string $id_buku)
+    {
+        $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
+        $sinopsis = $buku->sinopsis;
+        if (!$sinopsis) {
+            return redirect()->route('buku.sinopsis.create', $buku->uuid ?? $buku->id_buku);
+        }
+        return view('buku.sinopsis.edit', compact('buku', 'sinopsis'));
+    }
+
+    /** Update sinopsis */
+    public function updateSinopsis(Request $request, string $id_buku)
+    {
+        $buku = Buku::where('uuid', $id_buku)->orWhere('id_buku', $id_buku)->firstOrFail();
+        $sinopsis = $buku->sinopsis;
+        if (!$sinopsis) {
+            return redirect()->route('buku.sinopsis.create', $buku->uuid ?? $buku->id_buku);
+        }
+
+        $data = $request->validate([
+            'konten' => 'required|string',
+        ]);
+
+        $sinopsis->update(['konten' => $data['konten']]);
+
+        return redirect()->route('buku.show', $buku->uuid ?? $buku->id_buku)->with('success', 'Sinopsis berhasil diperbarui.');
     }
 }

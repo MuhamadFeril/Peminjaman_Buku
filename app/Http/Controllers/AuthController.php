@@ -37,18 +37,18 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
+        // Force role to 'user' for all registrations. Admins must be created/updated by existing admins.
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
-            'role' => 'required|in:user,admin',
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => $data['role'] ?? 'user',
+            'role' => 'user',
         ]);
 
         // Create a default Anggota (member card) for the newly registered user

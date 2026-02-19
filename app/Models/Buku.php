@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\SoftDeletes;   
+use Illuminate\Database\Eloquent\SoftDeletes;  
+use App\Models\Sinopsis;
 
 class Buku extends Model
 {
@@ -30,6 +31,11 @@ class Buku extends Model
     public function Peminjaman()
     {
         return $this->hasMany(Peminjaman::class, 'buku_id', 'id_buku');
+    }
+
+    public function sinopsis()
+    {
+        return $this->hasOne(Sinopsis::class, 'buku_id', 'id_buku');
     }
 
     public $timestamps = true;

@@ -23,7 +23,10 @@ Route::get('logout', [AuthController::class, 'logout'])->name('logout.get'); // 
 
 // Public Routes (Bisa dilihat tanpa login)
 Route::get('buku', [BukuController::class, 'index'])->name('buku.index');
-Route::get('buku/{id_buku}', [BukuController::class, 'show'])->name('buku.show');
+// Batasi {id_buku} ke pola angka atau UUID agar route statis seperti 'create' tidak tertangkap
+Route::get('buku/{id_buku}', [BukuController::class, 'show'])
+    ->where('id_buku', '[0-9a-fA-F\-]+')
+    ->name('buku.show');
 
 // Protected Routes (Harus Login)
 Route::middleware('auth')->group(function () {
@@ -31,6 +34,7 @@ Route::middleware('auth')->group(function () {
     // Dashboard & Profile
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // ANGGOTA (Pusat Perbaikan)
@@ -46,6 +50,9 @@ Route::middleware('auth')->group(function () {
     Route::post('anggota', [AnggotaController::class, 'store'])->name('anggota.store');
     Route::get('anggota/create-self-form', [AnggotaController::class, 'createSelfForm'])->name('anggota.createSelfForm');
     Route::post('anggota/store-self', [AnggotaController::class, 'storeSelf'])->name('anggota.storeSelf');
+    // User-facing edit for their own anggota record
+    Route::get('anggota/self/edit', [AnggotaController::class, 'editSelf'])->name('anggota.editSelf');
+    Route::put('anggota/self', [AnggotaController::class, 'updateSelf'])->name('anggota.updateSelf');
 
     // BUKU (Admin Only)
     Route::middleware('web_permission:buku.manage')->group(function () {
@@ -55,6 +62,11 @@ Route::middleware('auth')->group(function () {
         Route::put('buku/{id_buku}', [BukuController::class, 'update'])->name('buku.update');
         Route::delete('buku/{id_buku}', [BukuController::class, 'destroy'])->name('buku.destroy');
     });
+        // SINOPSIS (Admin only): tambah/edit/update sinopsis untuk setiap buku
+        Route::get('buku/{id_buku}/sinopsis/create', [BukuController::class, 'createSinopsis'])->name('buku.sinopsis.create');
+        Route::post('buku/{id_buku}/sinopsis', [BukuController::class, 'storeSinopsis'])->name('buku.sinopsis.store');
+        Route::get('buku/{id_buku}/sinopsis/edit', [BukuController::class, 'editSinopsis'])->name('buku.sinopsis.edit');
+        Route::put('buku/{id_buku}/sinopsis', [BukuController::class, 'updateSinopsis'])->name('buku.sinopsis.update');
 
     // PEMINJAMAN
     Route::get('peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');

@@ -15,14 +15,35 @@
     <div class="glass animate__animated animate__fadeIn max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
         
         <div class="md:w-1/2 bg-blue-600 p-12 text-white flex flex-col justify-center items-center text-center">
-            <h1 class="text-5xl font-extrabold mb-4 animate__animated animate__fadeInLeft">Perpustakaan Smk 11 Malang</h1>
+            <div class="w-full d-flex logo-row" style="display:flex;align-items:center;gap:16px;justify-content:center">
+                <div class="site-logo" style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.1);border-radius:18px;box-shadow:0 8px 20px rgba(0,0,0,0.08)">
+                    <!-- Simple book + shield SVG logo -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6v12a1 1 0 0 0 1 1h12"/>
+                        <path d="M21 6v12a1 1 0 0 1-1 1H9"/>
+                        <path d="M7 6V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>
+                        <circle cx="12" cy="12" r="1.5" fill="white" stroke="none" />
+                    </svg>
+                </div>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold mt-4 mb-2 animate__animated animate__fadeInLeft">Perpustakaan SMK 11 Malang</h1>
             <p class="text-blue-100 opacity-80 italic animate__animated animate__fadeInUp animate__delay-1s">"Jendela dunia dalam satu genggaman digital."</p>
         </div>
 
         <div class="md:w-1/2 p-10 bg-white/50">
-            <div class="flex justify-end space-x-4 mb-12">
-                <a href="/login" class="text-gray-600 hover:text-blue-600 font-medium transition duration-300">Login</a>
-                <a href="/register" class="bg-blue-600 text-white px-6 py-2 rounded-full shadow-lg hover:bg-blue-700 transition transform hover:scale-105">Daftar</a>
+            <div class="flex justify-end items-center space-x-4 mb-12">
+                @guest
+                    <a href="{{ route('login') }}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300 px-3 py-2 rounded-md">Login</a>
+                    <a href="{{ route('register') }}" class="bg-blue-600 text-white px-5 py-2 rounded-full shadow-lg hover:bg-blue-700 transition transform hover:scale-105">Daftar</a>
+                @else
+                    <div class="flex items-center space-x-3">
+                        <a href="/dashboard" class="text-sm text-gray-700">{{ auth()->user()->name }}</a>
+                        <form action="{{ route('logout') }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="text-gray-600 hover:text-red-600 text-sm">Logout</button>
+                        </form>
+                    </div>
+                @endguest
             </div>
 
             <h2 class="text-3xl font-bold text-gray-800 mb-4 animate__animated animate__fadeInRight">Selamat Datang</h2>
